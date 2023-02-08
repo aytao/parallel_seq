@@ -1,0 +1,4 @@
+(env
+ (dev (flags)))
+
+;; Change compile flags to the ocaml defaults

@@ -1,0 +1,8 @@
+(executable
+ (name test_seq)
+ (libraries seq))
+
+(install
+ (section bin)
+ (files
+  (test_seq.exe as test_seq)))
