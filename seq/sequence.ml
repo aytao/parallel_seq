@@ -68,18 +68,7 @@ module ParallelSeq : S = struct
   let nth (s: 'a t) (n: int): 'a =
     s.(n)
 
-  let map (f: 'a -> 'b) (s: 'a t): 'b t =
-    let body idx =
-      f s.(idx)
-    in
-    tabulate body (length s)
   
-  let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
-    failwith "Unimplemented"
-
-  let reduce (g: 'a -> 'a -> 'a) (base: 'a) (s: 'a t): 'a =
-    failwith "Unimplemented"
-
   let flatten (ss: 'a t t): 'a t =
     failwith "Unimplemented"
 
@@ -92,6 +81,46 @@ module ParallelSeq : S = struct
   let split (s: 'a t) (i: int): 'a t * 'a t =
     failwith "Unimplemented"
   
+  let even_elts (s: 'a t): 'a t =
+    let num_elts = (length s + 1) / 2 in
+    tabulate (fun i -> s.(i * 2)) num_elts
+  
+  let odd_elts (s: 'a t): 'a t =
+    let num_elts = length s / 2 in
+    tabulate (fun i -> s.(i * 2 + 1)) num_elts
+
+  (* Applies f evens.(i) odds.(i) for all valid indices in odd. If even is
+     one item longer, the last element of the array returned in f evens.(i) b*)
+  let combine (f: 'a -> 'a -> 'a) (b: 'a) (evens: 'a t) (odds: 'a t): 'a t =
+    let len = length evens in
+    let uneven = (len != length odds) in
+    let body (idx: int): 'a =
+      let e = nth evens idx in
+      let o = (if uneven && idx = len - 1 then b else nth odds idx) in
+      f e o
+    in
+    tabulate body len
+  
+  let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    combine f b (even_elts s) (odd_elts s)
+
+  let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
+    let rec helper (b: 'a) (s: 'a t): 'a =
+      if length s = 1 then nth s 0
+      else helper b (reduce_layer g b s)
+    in
+    if length s = 0 then b else helper b s
+
+  let map (f: 'a -> 'b) (s: 'a t): 'b t =
+    let body idx =
+      f s.(idx)
+    in
+    tabulate body (length s)
+  
+  let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
+    map inject s
+    |> reduce combine b
+    
   let interleave (s1: 'a t) (s2: 'a t): 'a t =
     let len1, len2 = length s1, length s2 in
     if len1 != len2 then
@@ -101,21 +130,6 @@ module ParallelSeq : S = struct
         if idx mod 2 = 0 then nth s1 (idx / 2) else nth s2 (idx / 2)
       in
       tabulate (body) (len1 + len2)
-
-  let map2 (f: 'a -> 'b -> 'c) (s1: 'a t) (s2: 'b t): 'c t =
-    let len1, len2 = length s1, length s2 in
-    if len1 != len2 then
-      raise (Invalid_argument "Sequences are different lengths")
-    else
-      tabulate (fun idx -> f s1.(idx) s2.(idx)) len1
-
-  let even_elts (s: 'a t): 'a t =
-    let num_elts = (length s + 1) / 2 in
-    tabulate (fun i -> s.(i * 2)) num_elts
-  
-  let odd_elts (s: 'a t): 'a t =
-    let num_elts = length s / 2 in
-    tabulate (fun i -> s.(i * 2 + 1)) num_elts
 
   (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
   let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
