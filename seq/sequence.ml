@@ -42,16 +42,16 @@ module ParallelSeq : S = struct
     arr
 
   let seq_of_array (arr: 'a array): 'a t =
-    failwith "Unimplemented"
+    tabulate (fun i -> arr.(i)) (Array.length arr)
 
   let array_of_seq (s: 'a t): 'a array =
-    failwith "Unimplemented"
+    tabulate (fun i -> s.(i)) (Array.length s)
 
   let iter (f: 'a -> unit) (s: 'a t): unit =
     Array.iter f s
 
   let length (s: 'a t): int =
-    failwith "Unimplemented"
+    Array.length s
 
   let empty (): 'a t =
     failwith "Unimplemented"
@@ -66,7 +66,7 @@ module ParallelSeq : S = struct
     failwith "Unimplemented"
 
   let nth (s: 'a t) (n: int): 'a =
-    failwith "Unimplemented"
+    s.(n)
 
   let map (f: 'a -> 'b) (s: 'a t): 'b t =
     let body idx =
@@ -101,7 +101,6 @@ module ParallelSeq : S = struct
         if idx mod 2 = 0 then nth s1 (idx / 2) else nth s2 (idx / 2)
       in
       tabulate (body) (len1 + len2)
-  
 
   let map2 (f: 'a -> 'b -> 'c) (s1: 'a t) (s2: 'b t): 'c t =
     let len1, len2 = length s1, length s2 in
@@ -118,14 +117,30 @@ module ParallelSeq : S = struct
     let num_elts = length s / 2 in
     tabulate (fun i -> s.(i * 2 + 1)) num_elts
 
-  (* Algorithm taken from NESL *)
-  let rec scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
-    if length s = 1 then
-      singleton b
-    else
-      let even_elts = even_elts s in
-      let odd_elts = odd_elts s in
-      let s' = scan f b (map2 f even_elts odd_elts) in
-      let half_sums = map2 f even_elts s' in
-      interleave s' half_sums
+  (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
+  let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    let combine (even_elts: 'a t) (odd_elts: 'a t): 'a t =
+      let len = length even_elts in
+      let uneven = (len != length odd_elts) in
+      let body (idx: int): 'a =
+        let e = nth even_elts idx in
+        let o = (if uneven && idx = len - 1 then b else nth odd_elts idx) in
+        f e o
+      in
+      tabulate body len
+    in
+    let rec helper f b s =
+      if length s = 1 then
+        singleton b
+      else
+        let even_elts = even_elts s in
+        let odd_elts = odd_elts s in
+        let s' = helper f b (combine even_elts odd_elts) in
+        let half_sums = combine even_elts s' in
+        let body idx =
+          if idx mod 2 = 0 then nth s' (idx / 2) else nth half_sums (idx / 2)
+        in
+        tabulate (body) (length s)
+    in
+    if length s = 0 then empty () else helper f b s
 end
