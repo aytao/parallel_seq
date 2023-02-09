@@ -33,13 +33,22 @@ module ParallelSeq : S = struct
   let run (task: 'a Task.task): 'a =
     Task.run pool task
 
+  let empty (): 'a t =
+    Array.init 0 (fun _ -> failwith "Should be unreachable")
+
   let tabulate (f: int -> 'a) (n: int): 'a t =
     (* TODO: Address array initialization *)
-    let arr = Array.make n (f 0) in
-    run (fun _ ->
-      Task.parallel_for ~start:0 ~finish:(n - 1) ~body:(fun i -> arr.(i) <- f i) pool
-      );
-    arr
+    if n = 0 then
+      empty ()
+    else if n < 0 then
+      raise (Invalid_argument "Cannot make sequence of negative length")
+    else (
+      let arr = Array.make n (f 0) in
+      run (fun _ ->
+        Task.parallel_for ~start:0 ~finish:(n - 1) ~body:(fun i -> arr.(i) <- f i) pool
+        );
+      arr
+    )
 
   let seq_of_array (arr: 'a array): 'a t =
     tabulate (fun i -> arr.(i)) (Array.length arr)
@@ -53,9 +62,6 @@ module ParallelSeq : S = struct
   let length (s: 'a t): int =
     Array.length s
 
-  let empty (): 'a t =
-    failwith "Unimplemented"
-
   let cons (x: 'a) (s: 'a t): 'a t =
     failwith "Unimplemented"
 
@@ -68,18 +74,26 @@ module ParallelSeq : S = struct
   let nth (s: 'a t) (n: int): 'a =
     s.(n)
 
-  
   let flatten (ss: 'a t t): 'a t =
     failwith "Unimplemented"
 
   let repeat (x: 'a) (n: int): 'a t =
-    failwith "Unimplemented"
+    tabulate (fun _ -> x) n
 
   let zip ((s1, s2): 'a t * 'b t): ('a * 'b) t =
-    failwith "Unimplemented"
+    let len1, len2 = length s1, length s2 in
+    if len1 != len2 then
+      raise (Invalid_argument "Sequences are different lengths")
+    else
+      tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split (s: 'a t) (i: int): 'a t * 'a t =
-    failwith "Unimplemented"
+    (* TODO: Consider using both? *)
+    let len = length s in
+    if i < 0 || i > len then
+      raise (Invalid_argument "i is outside of bounds")
+    else
+      (tabulate (fun idx -> s.(idx)) i, tabulate (fun idx -> s.(idx + i)) (len - i))
   
   let even_elts (s: 'a t): 'a t =
     let num_elts = (length s + 1) / 2 in
@@ -102,6 +116,7 @@ module ParallelSeq : S = struct
     tabulate body len
   
   let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    (* TODO: Consider using both? *)
     combine f b (even_elts s) (odd_elts s)
 
   let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
@@ -133,24 +148,15 @@ module ParallelSeq : S = struct
 
   (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
   let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
-    let combine (even_elts: 'a t) (odd_elts: 'a t): 'a t =
-      let len = length even_elts in
-      let uneven = (len != length odd_elts) in
-      let body (idx: int): 'a =
-        let e = nth even_elts idx in
-        let o = (if uneven && idx = len - 1 then b else nth odd_elts idx) in
-        f e o
-      in
-      tabulate body len
-    in
     let rec helper f b s =
       if length s = 1 then
         singleton b
       else
+        (* TODO: Consider using both? *)
         let even_elts = even_elts s in
         let odd_elts = odd_elts s in
-        let s' = helper f b (combine even_elts odd_elts) in
-        let half_sums = combine even_elts s' in
+        let s' = helper f b (combine f b even_elts odd_elts) in
+        let half_sums = combine f b even_elts s' in
         let body idx =
           if idx mod 2 = 0 then nth s' (idx / 2) else nth half_sums (idx / 2)
         in
