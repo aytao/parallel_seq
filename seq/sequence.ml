@@ -92,6 +92,40 @@ module ParallelSeq : S = struct
   let split (s: 'a t) (i: int): 'a t * 'a t =
     failwith "Unimplemented"
   
-  let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
-    failwith "Unimplemented"
+  let interleave (s1: 'a t) (s2: 'a t): 'a t =
+    let len1, len2 = length s1, length s2 in
+    if len1 != len2 then
+      raise (Invalid_argument "Sequences are different lengths")
+    else
+      let body idx =
+        if idx mod 2 = 0 then nth s1 (idx / 2) else nth s2 (idx / 2)
+      in
+      tabulate (body) (len1 + len2)
+  
+
+  let map2 (f: 'a -> 'b -> 'c) (s1: 'a t) (s2: 'b t): 'c t =
+    let len1, len2 = length s1, length s2 in
+    if len1 != len2 then
+      raise (Invalid_argument "Sequences are different lengths")
+    else
+      tabulate (fun idx -> f s1.(idx) s2.(idx)) len1
+
+  let even_elts (s: 'a t): 'a t =
+    let num_elts = (length s + 1) / 2 in
+    tabulate (fun i -> s.(i * 2)) num_elts
+  
+  let odd_elts (s: 'a t): 'a t =
+    let num_elts = length s / 2 in
+    tabulate (fun i -> s.(i * 2 + 1)) num_elts
+
+  (* Algorithm taken from NESL *)
+  let rec scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    if length s = 1 then
+      singleton b
+    else
+      let even_elts = even_elts s in
+      let odd_elts = odd_elts s in
+      let s' = scan f b (map2 f even_elts odd_elts) in
+      let half_sums = map2 f even_elts s' in
+      interleave s' half_sums
 end
