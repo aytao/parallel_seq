@@ -1,3 +1,3 @@
 (library
  (name seq)
- (libraries domainslib))
+ (libraries lib domainslib))

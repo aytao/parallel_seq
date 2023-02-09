@@ -1,0 +1,8 @@
+(executable
+ (name time_seq)
+ (libraries seq))
+
+(install
+ (section bin)
+ (files
+  (time_seq.exe as time_seq)))

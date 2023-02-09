@@ -1,3 +1,5 @@
+open Domainslib
+
 module type S = sig
   type 'a t
   val tabulate : (int -> 'a) -> int -> 'a t
@@ -21,9 +23,23 @@ module type S = sig
 end
 
 module ParallelSeq : S = struct
+
   type 'a t = 'a Array.t
-  let tabulate (f: int -> 'a) (b: int): 'a t =
-    failwith "Unimplemented"
+  
+  (* TODO: Address temp solution for domain count and pooling *)
+  let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
+  
+  (* TODO: Address nested run(?) *)
+  let run (task: 'a Task.task): 'a =
+    Task.run pool task
+
+  let tabulate (f: int -> 'a) (n: int): 'a t =
+    (* TODO: Address array initialization *)
+    let arr = Array.make n (f 0) in
+    run (fun _ ->
+      Task.parallel_for ~start:0 ~finish:(n - 1) ~body:(fun i -> arr.(i) <- f i) pool
+      );
+    arr
 
   let seq_of_array (arr: 'a array): 'a t =
     failwith "Unimplemented"
@@ -32,7 +48,7 @@ module ParallelSeq : S = struct
     failwith "Unimplemented"
 
   let iter (f: 'a -> unit) (s: 'a t): unit =
-    failwith "Unimplemented"
+    Array.iter f s
 
   let length (s: 'a t): int =
     failwith "Unimplemented"
@@ -44,7 +60,7 @@ module ParallelSeq : S = struct
     failwith "Unimplemented"
 
   let singleton (x: 'a): 'a t =
-    failwith "Unimplemented"
+    Array.make 1 x
 
   let append (s1: 'a t) (s2: 'a t): 'a t =
     failwith "Unimplemented"
