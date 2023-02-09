@@ -63,13 +63,18 @@ module ParallelSeq : S = struct
     Array.length s
 
   let cons (x: 'a) (s: 'a t): 'a t =
-    failwith "Unimplemented"
+    let len = length s in
+    tabulate (fun i -> if i = 0 then x else s.(i + 1)) (len + 1)
 
   let singleton (x: 'a): 'a t =
     Array.make 1 x
 
   let append (s1: 'a t) (s2: 'a t): 'a t =
-    failwith "Unimplemented"
+    let len1, len2 = length s1, length s2 in
+    let body (idx: int): 'a =
+      if idx < len1 then s1.(idx) else s2.(idx - len1)
+    in
+    tabulate body (len1 + len2)
 
   let nth (s: 'a t) (n: int): 'a =
     s.(n)
