@@ -69,7 +69,10 @@ module ParallelSeq : S = struct
     failwith "Unimplemented"
 
   let map (f: 'a -> 'b) (s: 'a t): 'b t =
-    failwith "Unimplemented"
+    let body idx =
+      f s.(idx)
+    in
+    tabulate body (length s)
   
   let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
     failwith "Unimplemented"
