@@ -32,6 +32,11 @@ module ParallelSeq : S = struct
   (* TODO: Address nested run(?) *)
   let run (task: 'a Task.task): 'a =
     Task.run pool task
+  
+  let parallel_for (n: int) (body: (int -> unit)): unit =
+    run (fun _ ->
+      Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
+    )
 
   let empty (): 'a t =
     Array.init 0 (fun _ -> failwith "Should be unreachable")
@@ -44,9 +49,7 @@ module ParallelSeq : S = struct
       raise (Invalid_argument "Cannot make sequence of negative length")
     else (
       let arr = Array.make n (f 0) in
-      run (fun _ ->
-        Task.parallel_for ~start:0 ~finish:(n - 1) ~body:(fun i -> arr.(i) <- f i) pool
-        );
+      parallel_for n (fun i -> arr.(i) <- f i);
       arr
     )
 
@@ -78,9 +81,6 @@ module ParallelSeq : S = struct
 
   let nth (s: 'a t) (n: int): 'a =
     s.(n)
-
-  let flatten (ss: 'a t t): 'a t =
-    failwith "Unimplemented"
 
   let repeat (x: 'a) (n: int): 'a t =
     tabulate (fun _ -> x) n
@@ -168,4 +168,21 @@ module ParallelSeq : S = struct
         tabulate (body) (length s)
     in
     if length s = 0 then empty () else helper f b s
+ 
+    let flatten (ss: 'a t t): 'a t =
+      let lens = map (fun s -> length s) ss in
+      let total_len = reduce (+) 0 lens in
+      let starts = scan (+) 0 lens in
+      let arr = Array.make total_len None in
+      parallel_for (length ss) (fun i -> 
+        let start = starts.(i) in
+        let s = ss.(i) in
+        parallel_for (length s) (fun j ->
+          arr.(start + j) <- Some (s.(j))
+        )
+      );
+      let force_unwrap x =
+        match x with Some v -> v | _ -> failwith "Should be unreachable" in 
+      map force_unwrap arr
+
 end
