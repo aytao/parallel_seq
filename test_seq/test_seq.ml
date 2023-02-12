@@ -15,3 +15,6 @@ let print_prefix_sum (a: int array): unit =
 let _ = print_prefix_sum a1
 let _ = print_prefix_sum a2
 let _ = print_prefix_sum a3
+
+let ss = ParallelSeq.seq_of_array [|ParallelSeq.seq_of_array a1; ParallelSeq.seq_of_array a2; ParallelSeq.seq_of_array a3|]
+let _ = print_sequence string_of_int (ParallelSeq.flatten ss)
