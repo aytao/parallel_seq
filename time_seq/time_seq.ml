@@ -32,6 +32,7 @@ let test (): int =
 
 (* let s = gen_int_seq n *)
 let _ = print_endline (string_of_float (time (fun _ -> ignore (test ())) 10))
+let _ = print_endline (string_of_int (test ()))
 (* let _ = print_endline (string_of_float (time (fun _ -> ignore (gen_norm ())) 10))
 let _ = print_endline (string_of_float (time (fun _ -> ignore (gen_float ())) 10)) *)
 
