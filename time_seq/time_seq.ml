@@ -21,7 +21,7 @@ let s = ParallelSeq.tabulate (fun x -> kill_time n; x) 1_000_000;;
 let gen_int_seq (n: int): int ParallelSeq.t =
   ParallelSeq.tabulate (fun i -> i) n
 
-let n = 1_000_000
+let n = 10_000_000
 
 let gen_weak ():int Weak.t = Weak.create n;;
 let gen_norm () = Array.make n 0;;
