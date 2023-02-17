@@ -18,3 +18,14 @@ let _ = print_prefix_sum a3
 
 let ss = ParallelSeq.seq_of_array [|ParallelSeq.seq_of_array a1; ParallelSeq.seq_of_array a2; ParallelSeq.seq_of_array a3|]
 let _ = print_sequence string_of_int (ParallelSeq.flatten ss)
+
+let _ = print_newline ();;
+
+let s = ParallelSeq.seq_of_array [||];;
+
+let l, r = ParallelSeq.split s 0;;
+
+let _ = print_sequence string_of_int l;;
+let _ = print_newline ();;
+let _ = print_sequence string_of_int r;;
+let _ = print_newline ();;

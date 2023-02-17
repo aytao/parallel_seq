@@ -39,7 +39,7 @@ module ParallelSeq : S = struct
     )
 
   let empty (): 'a t =
-    Array.init 0 (fun _ -> failwith "Should be unreachable")
+    [||]
 
   let tabulate (f: int -> 'a) (n: int): 'a t =
     (* TODO: Address array initialization *)
@@ -48,7 +48,7 @@ module ParallelSeq : S = struct
     else if n < 0 then
       raise (Invalid_argument "Cannot make sequence of negative length")
     else (
-      let arr = Array.make n (f 0) in
+      let arr: 'a array = Array_handler.get_uninitialized n in
       parallel_for n (fun i -> arr.(i) <- f i);
       arr
     )
@@ -93,12 +93,18 @@ module ParallelSeq : S = struct
       tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split (s: 'a t) (i: int): 'a t * 'a t =
-    (* TODO: Consider using both? *)
     let len = length s in
     if i < 0 || i > len then
       raise (Invalid_argument "i is outside of bounds")
     else
-      (tabulate (fun idx -> s.(idx)) i, tabulate (fun idx -> s.(idx + i)) (len - i))
+      let l = Array_handler.get_uninitialized i in
+      let r = Array_handler.get_uninitialized (len - i) in
+      let body idx =
+        if idx < i then l.(idx) <- s.(idx)
+        else r.(idx - i) <- s.(idx)
+      in
+      parallel_for len body;
+      (l, r)
   
   let even_elts (s: 'a t): 'a t =
     let num_elts = (length s + 1) / 2 in
@@ -169,20 +175,18 @@ module ParallelSeq : S = struct
     in
     if length s = 0 then empty () else helper f b s
  
-    let flatten (ss: 'a t t): 'a t =
-      let lens = map (fun s -> length s) ss in
-      let total_len = reduce (+) 0 lens in
-      let starts = scan (+) 0 lens in
-      let arr = Array.make total_len None in
-      parallel_for (length ss) (fun i -> 
-        let start = starts.(i) in
-        let s = ss.(i) in
-        parallel_for (length s) (fun j ->
-          arr.(start + j) <- Some (s.(j))
-        )
-      );
-      let force_unwrap x =
-        match x with Some v -> v | _ -> failwith "Should be unreachable" in 
-      map force_unwrap arr
+  let flatten (ss: 'a t t): 'a t =
+    let lens = map (fun s -> length s) ss in
+    let total_len = reduce (+) 0 lens in
+    let starts = scan (+) 0 lens in
+    let arr: 'a array = Array_handler.get_uninitialized total_len in
+    parallel_for (length ss) (fun i -> 
+      let start = starts.(i) in
+      let s = ss.(i) in
+      parallel_for (length s) (fun j ->
+        arr.(start + j) <- s.(j)
+      )
+    );
+    arr
 
 end
