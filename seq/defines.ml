@@ -9,3 +9,5 @@ let speclist = ["-num_domains", (Arg.Set_int domains_arg), "Manually set the num
 let _ = Arg.parse speclist (fun _ -> ()) "[num_domains]"
 
 let num_domains = !domains_arg
+
+let sequential_cutoff = 10

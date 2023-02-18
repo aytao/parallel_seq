@@ -21,11 +21,17 @@ let _ = print_sequence string_of_int (ParallelSeq.flatten ss)
 
 let _ = print_newline ();;
 
-let s = ParallelSeq.seq_of_array [||];;
+let s = ParallelSeq.seq_of_array [|0.; 1.;2.;3.;|];;
 
-let l, r = ParallelSeq.split s 0;;
+let l, r = ParallelSeq.split s 2;;
 
-let _ = print_sequence string_of_int l;;
+let _ = print_sequence string_of_float l;;
 let _ = print_newline ();;
-let _ = print_sequence string_of_int r;;
+let _ = print_sequence string_of_float r;;
 let _ = print_newline ();;
+
+let s = ParallelSeq.tabulate (fun _ -> 1) 125;;
+
+let a = ParallelSeq.build_fenwick_tree (+) 0 5 s;;
+
+Array.iter (fun i -> print_string ((string_of_int i)^",")) a;;

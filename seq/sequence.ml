@@ -20,6 +20,8 @@ module type S = sig
   val zip : ('a t * 'b t) -> ('a * 'b) t
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
+
+  val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> 'a array
 end
 
 module ParallelSeq : S = struct
@@ -57,6 +59,9 @@ module ParallelSeq : S = struct
     tabulate (fun i -> arr.(i)) (Array.length arr)
 
   let array_of_seq (s: 'a t): 'a array =
+    tabulate (fun i -> s.(i)) (Array.length s)
+
+  let clone (s: 'a t): 'a t =
     tabulate (fun i -> s.(i)) (Array.length s)
 
   let iter (f: 'a -> unit) (s: 'a t): unit =
@@ -125,6 +130,36 @@ module ParallelSeq : S = struct
       f e o
     in
     tabulate body len
+
+
+  let build_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (s: 'a t): 'a array =
+    if k < 2 then failwith "cannot have k < 2" else
+    let len = length s in
+    let tree = clone s in
+    let group_subtrees (tree: 'a array) (subtree_size: int) (k: int): unit =
+      let rec group_sequentially (subtree_num: int): unit =
+        let offset = subtree_num * subtree_size * k in
+        let acc = ref b in
+        for i = 1 to k do
+          let idx = offset + (i * subtree_size) in
+          acc := f !acc tree.(idx - 1)
+        done;
+        let final_idx = (subtree_num + 1) * subtree_size * k in
+        tree.(final_idx - 1) <- !acc;
+      in
+      parallel_for (len / (subtree_size * k)) group_sequentially;
+      ()
+    in
+    let rec loop (tree: 'a array) (prev_size: int): unit =
+      if prev_size > len then ()
+      else begin
+        group_subtrees tree prev_size k;
+        loop tree (prev_size * k);
+        ()
+      end
+    in
+    loop tree 1;
+    tree
   
   let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     (* TODO: Consider using both? *)
