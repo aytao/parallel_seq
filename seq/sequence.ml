@@ -21,7 +21,9 @@ module type S = sig
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
 
-  val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> 'a array
+  val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
+  val reduce_alt : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
+  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
 end
 
 module ParallelSeq : S = struct
@@ -131,8 +133,8 @@ module ParallelSeq : S = struct
     in
     tabulate body len
 
-
-  let build_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (s: 'a t): 'a array =
+  (* Returns a calculated k-way fenwick tree, as well as the size of the greatest subtree in the structure *)
+  let build_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (s: 'a t): ('a array * int) =
     if k < 2 then failwith "cannot have k < 2" else
     let len = length s in
     let tree = clone s in
@@ -140,26 +142,42 @@ module ParallelSeq : S = struct
       let rec group_sequentially (subtree_num: int): unit =
         let offset = subtree_num * subtree_size * k in
         let acc = ref b in
-        for i = 1 to k do
+        let last = min k ((len - offset) / subtree_size) in
+        for i = 1 to last do
           let idx = offset + (i * subtree_size) in
-          acc := f !acc tree.(idx - 1)
+          acc := f !acc tree.(idx - 1);
+          tree.(idx - 1) <- !acc;
         done;
-        let final_idx = (subtree_num + 1) * subtree_size * k in
-        tree.(final_idx - 1) <- !acc;
       in
-      parallel_for (len / (subtree_size * k)) group_sequentially;
+      let ceil_div num den = (num + den - 1) / den in
+      parallel_for (ceil_div len (subtree_size * k)) group_sequentially;
       ()
     in
-    let rec loop (tree: 'a array) (prev_size: int): unit =
-      if prev_size > len then ()
+    let rec loop (tree: 'a array) (prev_size: int): int =
+      if prev_size > len then prev_size / k
       else begin
         group_subtrees tree prev_size k;
-        loop tree (prev_size * k);
-        ()
+        loop tree (prev_size * k)
       end
     in
-    loop tree 1;
-    tree
+    let last_size = loop tree 1 in
+    (tree, last_size)
+  
+  let get_from_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (tree: 'a array) (last_size: int) (i: int): 'a =
+    let i = i + 1 in
+    let round_down idx d = d * (idx / d) in
+    let rec get_sum (subtree_size: int) (last_idx: int) (acc: 'a) : 'a =
+      if subtree_size > i then get_sum (subtree_size / k) last_idx acc else
+      let layer_idx = round_down i subtree_size in
+      if layer_idx = i then
+        f acc tree.(layer_idx - 1)
+      else if layer_idx = last_idx then
+        get_sum (subtree_size / k) last_idx acc
+      else
+        get_sum (subtree_size / k) layer_idx (f acc tree.(layer_idx - 1))
+    in
+    get_sum last_size (-1) b
+  
   
   let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     (* TODO: Consider using both? *)
@@ -171,6 +189,10 @@ module ParallelSeq : S = struct
       else helper b (reduce_layer g b s)
     in
     if length s = 0 then b else helper b s
+
+  let reduce_alt (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
+    let tree, size = build_fenwick_tree g b Defines.sequential_cutoff s in
+    get_from_fenwick_tree g b Defines.sequential_cutoff tree size (length s - 1)
 
   let map (f: 'a -> 'b) (s: 'a t): 'b t =
     let body idx =
@@ -224,4 +246,7 @@ module ParallelSeq : S = struct
     );
     arr
 
+  let scan_alt (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
+    tabulate (fun i -> get_from_fenwick_tree f b Defines.sequential_cutoff tree size (i)) (length s)
 end

@@ -30,8 +30,15 @@ let _ = print_newline ();;
 let _ = print_sequence string_of_float r;;
 let _ = print_newline ();;
 
-let s = ParallelSeq.tabulate (fun _ -> 1) 125;;
+let s = ParallelSeq.tabulate (fun _ -> 1) 128;;
 
-let a = ParallelSeq.build_fenwick_tree (+) 0 5 s;;
+let a, size = ParallelSeq.build_fenwick_tree (+) 0 5 s;;
 
 Array.iter (fun i -> print_string ((string_of_int i)^",")) a;;
+print_newline ();
+print_int size;
+print_newline ();
+print_int (ParallelSeq.reduce_alt (+) 0 s);;
+print_newline ();
+print_sequence string_of_int (ParallelSeq.scan_alt (+) 0 s);;
+print_newline ();
