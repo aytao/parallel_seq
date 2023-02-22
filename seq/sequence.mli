@@ -24,4 +24,6 @@ module type S = sig
   val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
 end
 
-module ParallelSeq : S
+module FlatArraySeq : S
+
+(* module NestedArraySeq : S *)

@@ -26,21 +26,27 @@ module type S = sig
   val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
 end
 
-module ParallelSeq : S = struct
+
+
+
+(* TODO: Address temp solution for domain count and pooling *)
+let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
+  
+(* TODO: Address nested run(?) *)
+let run (task: 'a Task.task): 'a =
+  Task.run pool task
+
+let parallel_for (n: int) (body: (int -> unit)): unit =
+  run (fun _ ->
+    Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
+  )
+
+
+
+
+module FlatArraySeq : S = struct
 
   type 'a t = 'a Array.t
-  
-  (* TODO: Address temp solution for domain count and pooling *)
-  let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
-  
-  (* TODO: Address nested run(?) *)
-  let run (task: 'a Task.task): 'a =
-    Task.run pool task
-  
-  let parallel_for (n: int) (body: (int -> unit)): unit =
-    run (fun _ ->
-      Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
-    )
 
   let empty (): 'a t =
     [||]
@@ -138,6 +144,7 @@ module ParallelSeq : S = struct
     if k < 2 then failwith "cannot have k < 2" else
     let len = length s in
     let tree = clone s in
+    (* TODO: remove redundant params *)
     let group_subtrees (tree: 'a array) (subtree_size: int) (k: int): unit =
       let rec group_sequentially (subtree_num: int): unit =
         let offset = subtree_num * subtree_size * k in
@@ -178,6 +185,36 @@ module ParallelSeq : S = struct
     in
     get_sum last_size (-1) b
   
+  let collapse_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (tree: 'a array) (last_size: int): 'a t =
+    let len = Array.length tree in
+    let round_down idx d = d * (idx / d) in
+    let collapse_layer (prev_size: int): unit =
+      let subtree_size = prev_size / k in
+      let rec collapse_sequentially (group_num: int): unit =
+        (* First group is already correct *)
+        if group_num = 0 then () else
+        let offset = group_num * prev_size in
+        let last = min (k - 1) ((len - offset) / subtree_size) in
+        (* No need to do first *)
+        for i = 1 to last do
+          let idx = offset + (i * subtree_size) in
+          let prev_group_idx = round_down idx prev_size in
+          tree.(idx - 1) <- f tree.(prev_group_idx - 1) tree.(idx - 1);
+        done;
+      in
+      let ceil_div num den = (num + den - 1) / den in
+      parallel_for (ceil_div len (prev_size)) collapse_sequentially;
+      ()
+    in
+    let rec loop (tree: 'a array) (prev_size: int): unit =
+      if prev_size <= 1 then ()
+      else begin
+        collapse_layer prev_size;
+        loop tree (prev_size / k)
+      end
+    in
+    loop tree last_size;
+    tree
   
   let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     (* TODO: Consider using both? *)
@@ -248,5 +285,5 @@ module ParallelSeq : S = struct
 
   let scan_alt (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
-    tabulate (fun i -> get_from_fenwick_tree f b Defines.sequential_cutoff tree size (i)) (length s)
+    collapse_fenwick_tree f b Defines.sequential_cutoff tree size
 end
