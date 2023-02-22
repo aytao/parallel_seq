@@ -327,16 +327,16 @@ module NestedArraySeq : S = struct
     let section_num = n / grain in
     let section_idx = n mod grain in
     contents.(section_num).(section_idx)
+    
+  let length (s: 'a t): int =
+    s.length
 
   let seq_of_array (arr: 'a array): 'a t =
     tabulate (fun i -> arr.(i)) (Array.length arr)
 
   let array_of_seq (s: 'a t): 'a array =
-    Array.init s.length (fun i -> nth s i)
+    Array.init (length s) (fun i -> nth s i)
   
-  let length (s: 'a t): int =
-    s.length
-
   let clone (s: 'a t): 'a t =
     tabulate (fun i -> nth s i) (length s)
 
@@ -378,16 +378,26 @@ module NestedArraySeq : S = struct
     else
       failwith "Unimplemented"
   let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
-    failwith "Unimplemented"
+    let sequential_reduce: ('a array -> 'a) =
+      Array.fold_left g b
+    in
+    let section_sums = Array_handler.get_uninitialized s.num_sections in
+    let reduce_section (idx: int): unit =
+      section_sums.(idx) <- sequential_reduce s.contents.(idx)
+    in
+    parallel_for s.num_sections reduce_section;
+    sequential_reduce section_sums
 
   let map (f: 'a -> 'b) (s: 'a t): 'b t =
-    failwith "Unimplemented"
+    let body idx =
+      f (nth s idx)
+    in
+    tabulate body (length s)
   
   let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
     map inject s
     |> reduce combine b
 
-  (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
   let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     failwith "Unimplemented"
  

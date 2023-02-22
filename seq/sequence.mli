@@ -26,4 +26,4 @@ end
 
 module FlatArraySeq : S
 
-(* module NestedArraySeq : S *)
+module NestedArraySeq : S

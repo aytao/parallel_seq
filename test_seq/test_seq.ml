@@ -30,6 +30,10 @@ let _ = print_newline ();;
 let _ = print_sequence string_of_float r;;
 let _ = print_newline ();;
 
-let s = FlatArraySeq.tabulate (fun _ -> 1) 128;;
+let s = NestedArraySeq.tabulate (fun i -> i) 128;;
 
-let list_seq = FlatArraySeq.tabulate (fun i -> [i]) 128;;
+print_int (NestedArraySeq.reduce (+) 0 s);;
+let _ = print_newline ();;
+
+print_int (NestedArraySeq.map_reduce (fun i -> i mod 2) (+) 0 s);;
+let _ = print_newline ();;
