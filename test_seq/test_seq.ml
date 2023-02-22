@@ -32,28 +32,4 @@ let _ = print_newline ();;
 
 let s = FlatArraySeq.tabulate (fun _ -> 1) 128;;
 
-let a, size = FlatArraySeq.build_fenwick_tree (+) 0 5 s;;
-
-Array.iter (fun i -> print_string ((string_of_int i)^",")) a;;
-print_newline ();;
-print_int size;;
-print_newline ();;
-print_int (FlatArraySeq.reduce_alt (+) 0 s);;
-print_newline ();;
-print_sequence string_of_int (FlatArraySeq.scan_alt (+) 0 s);;
-print_newline ();;
-
 let list_seq = FlatArraySeq.tabulate (fun i -> [i]) 128;;
-List.iter (fun i -> print_string ((string_of_int i)^", ")) (FlatArraySeq.reduce_alt (@) [] list_seq);;
-print_newline ();;
-
-let f_arr1: float array = Array_handler.get_uninitialized 100;;
-let f_arr2: float array = Array.create_float 100;;
-let f_arr3: float array = Array.make 100 0.0;;
-
-print_int (Obj.tag (Obj.repr f_arr1));;
-print_newline ();;
-print_int (Obj.tag (Obj.repr f_arr2));;
-print_newline ();;
-print_int (Obj.tag (Obj.repr f_arr3));;
-print_newline ();;

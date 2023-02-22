@@ -19,9 +19,9 @@ module type S = sig
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
   (* TODO: REMOVE!! *)
-  val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
+  (* val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
   val reduce_alt : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
-  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
+  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t *)
 end
 
 module FlatArraySeq : S

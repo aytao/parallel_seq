@@ -20,10 +20,10 @@ module type S = sig
   val zip : ('a t * 'b t) -> ('a * 'b) t
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
-
+(* 
   val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
   val reduce_alt : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
-  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
+  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t *)
 end
 
 
@@ -286,4 +286,111 @@ module FlatArraySeq : S = struct
   let scan_alt (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
     collapse_fenwick_tree f b Defines.sequential_cutoff tree size
+end
+
+
+module NestedArraySeq : S = struct
+
+  type 'a t = {contents: 'a array array; grain: int; num_sections: int; length: int}
+
+  let sequential_cutoff = Defines.sequential_cutoff
+  let num_domains = Defines.num_domains
+
+  let ceil_div num den = (num + den - 1) / den
+
+  let empty (): 'a t =
+    {contents = [||]; grain = 0; num_sections = 0; length = 0}
+
+  let tabulate (f: int -> 'a) (n: int): 'a t =
+    if n = 0 then
+      empty ()
+    else if n < 0 then
+      raise (Invalid_argument "Cannot make sequence of negative length")
+    else (
+      (* TODO: Amount? Round up? Round down? *)
+      let grain = max sequential_cutoff (ceil_div n num_domains) in
+      let num_sections = ceil_div n grain in
+      let outer_arr: 'a array array = Array_handler.get_uninitialized num_sections in
+      
+      let sequential_init (i: int): unit =
+        (* TODO: In parallel? *)
+        let section_length = min grain (n - i * grain) in
+        let section = Array.init section_length (fun idx -> f (i * grain + idx)) in
+        (* TODO: Unsafe set? *)
+        outer_arr.(i) <- section
+      in
+      parallel_for num_sections sequential_init;
+      {contents = outer_arr; grain = grain; num_sections = num_sections; length = n}
+    )
+
+  let nth ({contents; grain; num_sections; length}: 'a t) (n: int): 'a =
+    let section_num = n / grain in
+    let section_idx = n mod grain in
+    contents.(section_num).(section_idx)
+
+  let seq_of_array (arr: 'a array): 'a t =
+    tabulate (fun i -> arr.(i)) (Array.length arr)
+
+  let array_of_seq (s: 'a t): 'a array =
+    Array.init s.length (fun i -> nth s i)
+  
+  let length (s: 'a t): int =
+    s.length
+
+  let clone (s: 'a t): 'a t =
+    tabulate (fun i -> nth s i) (length s)
+
+  let iter (f: 'a -> unit) (s: 'a t): unit =
+    let inner_iter (section: 'a array): unit =
+      Array.iter f section
+    in
+    Array.iter inner_iter s.contents
+
+  let cons (x: 'a) (s: 'a t): 'a t =
+    let len = length s in
+    tabulate (fun i -> if i = 0 then x else nth s (i + 1)) (len + 1)
+
+  let singleton (x: 'a): 'a t =
+    {contents = [|[|x|]|]; grain = 1; num_sections = 1; length = 1}
+
+  let append (s1: 'a t) (s2: 'a t): 'a t =
+    let len1, len2 = length s1, length s2 in
+    let body (idx: int): 'a =
+      if idx < len1 then nth s1 idx else nth s2 (idx - len1)
+    in
+    tabulate body (len1 + len2)
+
+
+  let repeat (x: 'a) (n: int): 'a t =
+    tabulate (fun _ -> x) n
+
+  let zip ((s1, s2): 'a t * 'b t): ('a * 'b) t =
+    let len1, len2 = length s1, length s2 in
+    if len1 != len2 then
+      raise (Invalid_argument "Sequences are different lengths")
+    else
+      failwith "Unimplemented"
+
+  let split (s: 'a t) (i: int): 'a t * 'a t =
+    let len = length s in
+    if i < 0 || i > len then
+      raise (Invalid_argument "i is outside of bounds")
+    else
+      failwith "Unimplemented"
+  let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
+    failwith "Unimplemented"
+
+  let map (f: 'a -> 'b) (s: 'a t): 'b t =
+    failwith "Unimplemented"
+  
+  let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
+    map inject s
+    |> reduce combine b
+
+  (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
+  let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    failwith "Unimplemented"
+ 
+  let flatten (ss: 'a t t): 'a t =
+    failwith "Unimplemented"
 end
