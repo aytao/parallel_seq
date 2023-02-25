@@ -12,4 +12,4 @@ let _ = Arg.parse speclist (fun _ -> ()) "[num_domains]"
 
 let num_domains = !domains_arg
 
-let sequential_cutoff = 10
+let sequential_cutoff = 1000

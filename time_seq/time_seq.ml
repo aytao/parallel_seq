@@ -18,20 +18,21 @@ let s = ParallelSeq.tabulate (fun x -> kill_time n; x) 1_000_000;;
  *)
 
 
-let gen_int_seq (n: int): int ParallelSeq.t =
-  ParallelSeq.tabulate (fun i -> i) n
+let gen_int_seq (n: int): int NestedArraySeq.t =
+  NestedArraySeq.tabulate (fun i -> i) n
 
-let n = 10_000_000
+let n = 10_000
 
 let gen_weak ():int Weak.t = Weak.create n;;
 let gen_norm () = Array.make n 0;;
 let gen_float () = Array.create_float n;;
 
+let ss = NestedArraySeq.tabulate (fun _ -> gen_int_seq n) n;;
 let test (): int =
-  ParallelSeq.reduce (+) 0 (gen_int_seq n)
+  NestedArraySeq.map_reduce (NestedArraySeq.reduce (+) 0) (+) 0 ss;;
 
 (* let s = gen_int_seq n *)
-let _ = print_endline (string_of_float (time (fun _ -> ignore (test ())) 10))
+let _ = print_endline (string_of_float (time (fun _ -> ignore (test ())) 100))
 let _ = print_endline (string_of_int (test ()))
 (* let _ = print_endline (string_of_float (time (fun _ -> ignore (gen_norm ())) 10))
 let _ = print_endline (string_of_float (time (fun _ -> ignore (gen_float ())) 10)) *)
