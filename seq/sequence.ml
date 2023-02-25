@@ -301,15 +301,19 @@ module NestedArraySeq : S = struct
   let empty (): 'a t =
     {contents = [||]; grain = 0; num_sections = 0; length = 0}
 
+  (* TODO: Amount? Round up? Round down? *)
+  let calculate_grain (length: int): int * int =
+    let grain = max sequential_cutoff (ceil_div length num_domains) in
+    let num_sections = ceil_div length grain in
+    grain, num_sections
+
   let tabulate (f: int -> 'a) (n: int): 'a t =
     if n = 0 then
       empty ()
     else if n < 0 then
       raise (Invalid_argument "Cannot make sequence of negative length")
     else (
-      (* TODO: Amount? Round up? Round down? *)
-      let grain = max sequential_cutoff (ceil_div n num_domains) in
-      let num_sections = ceil_div n grain in
+      let grain, num_sections = calculate_grain n in
       let outer_arr: 'a array array = Array_handler.get_uninitialized num_sections in
       
       let sequential_init (i: int): unit =
@@ -360,7 +364,6 @@ module NestedArraySeq : S = struct
     in
     tabulate body (len1 + len2)
 
-
   let repeat (x: 'a) (n: int): 'a t =
     tabulate (fun _ -> x) n
 
@@ -377,6 +380,7 @@ module NestedArraySeq : S = struct
       raise (Invalid_argument "i is outside of bounds")
     else
       failwith "Unimplemented"
+
   let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
     let sequential_reduce: ('a array -> 'a) =
       Array.fold_left g b
@@ -399,8 +403,54 @@ module NestedArraySeq : S = struct
     |> reduce combine b
 
   let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
-    failwith "Unimplemented"
+    let sequential_array_scan (arr: 'a array) (b': 'a): 'a =
+      let acc = ref b' in
+      for i = 0 to (Array.length arr - 1) do
+        acc := f !acc arr.(i);
+        arr.(i) <- !acc;
+      done;
+      !acc
+    in
+    let section_sums: 'a array = Array_handler.get_uninitialized s.num_sections in
+    let new_contents: 'a array array = Array_handler.get_uninitialized s.num_sections in
+    let scan_section (i: int): unit =
+      let section_copy = Array.copy s.contents.(i) in
+      let section_sum = sequential_array_scan section_copy b in
+      section_sums.(i) <- section_sum;
+      new_contents.(i) <- section_copy
+    in
+    parallel_for s.num_sections scan_section;
+    sequential_array_scan section_sums b;
+    (* TODO: This could probably be a bit cleaner *)
+    let update_section (i: int): unit =
+      if i = 0 then () else
+      let section_prefix = section_sums.(i - 1) in
+      let section = new_contents.(i) in
+      for j = 0 to (Array.length section - 1) do
+        section.(j) <- f section_prefix section.(j) 
+      done;
+    in
+    parallel_for (s.num_sections) update_section;
+    {contents = new_contents; grain = s.grain; num_sections = s.num_sections; length = s.length}
+
  
   let flatten (ss: 'a t t): 'a t =
-    failwith "Unimplemented"
+    let lengths = map length ss in
+    (* TODO: Can save a bit of recomputation here with reduce and scan *)
+    let total_len = reduce (+) 0 lengths in
+    let starts = scan (+) 0 lengths in
+    let grain, num_sections = calculate_grain total_len in
+    let new_contents = Array_handler.get_uninitialized num_sections in
+    let set_contents (i: int) (v: 'a): unit =    
+      let section_num, section_idx = (i / grain, i mod grain) in
+      new_contents.(section_num).(section_idx) <- v
+    in
+    parallel_for (length ss) (fun i -> 
+      let start = nth starts i in
+      let s = nth ss i in
+      parallel_for (length s) (fun j ->
+        set_contents (start + j) (nth s j)
+      )
+    );
+    {contents = new_contents; grain = grain; num_sections = num_sections; length = total_len;}
 end
