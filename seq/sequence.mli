@@ -27,3 +27,5 @@ end
 module FlatArraySeq : S
 
 module NestedArraySeq : S
+
+module S : S

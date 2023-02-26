@@ -41,8 +41,12 @@ let parallel_for (n: int) (body: (int -> unit)): unit =
     Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
   )
 
-
-
+let both (f: 'a -> 'b) (x: 'a) (g: 'c -> 'd) (y: 'c): 'b * 'd =
+  run (fun _ ->
+    let xp = Task.async pool (fun _ -> f x) in
+    let y = g y in
+    (Task.await pool xp, y)
+  )
 
 module FlatArraySeq : S = struct
 
@@ -327,6 +331,12 @@ module NestedArraySeq : S = struct
       {contents = outer_arr; grain = grain; num_sections = num_sections; length = n}
     )
 
+  (* NOTE: For internal use only *)
+  let set (contents: 'a array array) (grain: int) (idx: int) (v: 'a): unit =
+    let section_num = idx / grain in
+    let section_idx = idx mod grain in
+    contents.(section_num).(section_idx) <- v
+
   let nth ({contents; grain; num_sections; length}: 'a t) (n: int): 'a =
     let section_num = n / grain in
     let section_idx = n mod grain in
@@ -372,14 +382,20 @@ module NestedArraySeq : S = struct
     if len1 != len2 then
       raise (Invalid_argument "Sequences are different lengths")
     else
-      failwith "Unimplemented"
+      tabulate (fun i -> (nth s1 i, nth s2 i)) len1
 
   let split (s: 'a t) (i: int): 'a t * 'a t =
     let len = length s in
     if i < 0 || i > len then
       raise (Invalid_argument "i is outside of bounds")
+    (* TODO: Ensure reuse is safe *)
+    else if i = 0 then
+      (empty (), s)
+    else if i = len then
+      (s, empty ())
     else
-      failwith "Unimplemented"
+      both (tabulate (fun idx -> nth s idx)) i
+           (tabulate (fun idx -> nth s (i + idx))) (len - i)
 
   let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
     let sequential_reduce: ('a array -> 'a) =
@@ -452,5 +468,7 @@ module NestedArraySeq : S = struct
         set_contents (start + j) (nth s j)
       )
     );
-    {contents = new_contents; grain = grain; num_sections = num_sections; length = total_len;}
+    {contents = new_contents; grain = grain; num_sections = num_sections; length = total_len}
 end
+
+module S = NestedArraySeq
