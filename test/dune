@@ -1,0 +1,9 @@
+(test
+ (name test_valid)
+ (libraries seq)
+ (modules test_valid))
+
+(test
+ (name test_ordering)
+ (libraries seq)
+ (modules test_ordering))
