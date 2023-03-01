@@ -1,1 +1,1 @@
-print_endline "Hi test"
+let _ = print_endline "Hi test"

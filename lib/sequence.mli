@@ -4,6 +4,7 @@ module type S = sig
   val seq_of_array : 'a array -> 'a t
   val array_of_seq : 'a t -> 'a array
   val iter: ('a -> unit) -> 'a t -> unit
+  val iteri: (int -> 'a -> unit) -> 'a t -> unit
   val length : 'a t -> int
   val empty : unit  ->'a t
   val cons : 'a -> 'a t -> 'a t
@@ -18,10 +19,6 @@ module type S = sig
   val zip : ('a t * 'b t) -> ('a * 'b) t
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
-  (* TODO: REMOVE!! *)
-  (* val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
-  val reduce_alt : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
-  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t *)
 end
 
 module FlatArraySeq : S

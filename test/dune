@@ -4,6 +4,16 @@
  (modules test_valid))
 
 (test
- (name test_ordering)
+ (name test_iter)
  (libraries seq)
- (modules test_ordering))
+ (modules test_iter))
+
+(test
+ (name test_combine)
+ (libraries seq)
+ (modules test_combine))
+
+(test
+ (name test_splice_append_ops)
+ (libraries seq)
+ (modules test_splice_append_ops))

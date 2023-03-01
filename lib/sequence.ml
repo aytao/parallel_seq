@@ -6,6 +6,7 @@ module type S = sig
   val seq_of_array : 'a array -> 'a t
   val array_of_seq : 'a t -> 'a array
   val iter: ('a -> unit) -> 'a t -> unit
+  val iteri: (int -> 'a -> unit) -> 'a t -> unit
   val length : 'a t -> int
   val empty : unit  ->'a t
   val cons : 'a -> 'a t -> 'a t
@@ -76,8 +77,15 @@ module FlatArraySeq : S = struct
   let clone (s: 'a t): 'a t =
     tabulate (fun i -> s.(i)) (Array.length s)
 
-  let iter (f: 'a -> unit) (s: 'a t): unit =
-    Array.iter f s
+  let iter =
+    Array.iter
+
+  let iteri =
+    Array.iteri
+  
+  let print (to_string: 'a -> string) (s: 'a t): unit =
+    iter (fun v -> Printf.printf "%s, " (to_string v)) s;
+    print_newline ()
 
   let length (s: 'a t): int =
     Array.length s
@@ -122,26 +130,6 @@ module FlatArraySeq : S = struct
       in
       parallel_for len body;
       (l, r)
-  
-  let even_elts (s: 'a t): 'a t =
-    let num_elts = (length s + 1) / 2 in
-    tabulate (fun i -> s.(i * 2)) num_elts
-  
-  let odd_elts (s: 'a t): 'a t =
-    let num_elts = length s / 2 in
-    tabulate (fun i -> s.(i * 2 + 1)) num_elts
-
-  (* Applies f evens.(i) odds.(i) for all valid indices in odd. If even is
-     one item longer, the last element of the array returned in f evens.(i) b*)
-  let combine (f: 'a -> 'a -> 'a) (b: 'a) (evens: 'a t) (odds: 'a t): 'a t =
-    let len = length evens in
-    let uneven = (len != length odds) in
-    let body (idx: int): 'a =
-      let e = nth evens idx in
-      let o = (if uneven && idx = len - 1 then b else nth odds idx) in
-      f e o
-    in
-    tabulate body len
 
   (* Returns a calculated k-way fenwick tree, as well as the size of the greatest subtree in the structure *)
   let build_fenwick_tree (f: 'a -> 'a -> 'a) (b: 'a) (k: int) (s: 'a t): ('a array * int) =
@@ -220,20 +208,42 @@ module FlatArraySeq : S = struct
     loop tree last_size;
     tree
   
+  let even_elts (s: 'a t): 'a t =
+    let num_elts = (length s + 1) / 2 in
+    tabulate (fun i -> s.(i * 2)) num_elts
+  
+  let odd_elts (s: 'a t): 'a t =
+    let num_elts = length s / 2 in
+    tabulate (fun i -> s.(i * 2 + 1)) num_elts
+
+  (* Applies f evens.(i) odds.(i) for all valid indices in odd. If even is
+      one item longer, the last element of the array returned is f evens.(i) b *)
+  let combine (f: 'a -> 'a -> 'a) (b: 'a) (evens: 'a t) (odds: 'a t): 'a t =
+    let len = length evens in
+    let uneven = (len != length odds) in
+    let body (idx: int): 'a =
+      let e = nth evens idx in
+      let o = (if uneven && idx = len - 1 then b else nth odds idx) in
+      f e o
+    in
+    tabulate body len
+  
   let reduce_layer (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     (* TODO: Consider using both? *)
     combine f b (even_elts s) (odd_elts s)
 
-  let reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
+  let tree_reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
     let rec helper (b: 'a) (s: 'a t): 'a =
       if length s = 1 then nth s 0
       else helper b (reduce_layer g b s)
     in
     if length s = 0 then b else helper b s
 
-  let reduce_alt (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
+  let fenwick_reduce (g: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a =
     let tree, size = build_fenwick_tree g b Defines.sequential_cutoff s in
     get_from_fenwick_tree g b Defines.sequential_cutoff tree size (length s - 1)
+    
+  let reduce = fenwick_reduce
 
   let map (f: 'a -> 'b) (s: 'a t): 'b t =
     let body idx =
@@ -244,19 +254,9 @@ module FlatArraySeq : S = struct
   let map_reduce (inject: 'a -> 'b) (combine: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
     map inject s
     |> reduce combine b
-    
-  let interleave (s1: 'a t) (s2: 'a t): 'a t =
-    let len1, len2 = length s1, length s2 in
-    if len1 != len2 then
-      raise (Invalid_argument "Sequences are different lengths")
-    else
-      let body idx =
-        if idx mod 2 = 0 then nth s1 (idx / 2) else nth s2 (idx / 2)
-      in
-      tabulate (body) (len1 + len2)
 
   (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
-  let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+  let nesl_exclusive_scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
     let rec helper f b s =
       if length s = 1 then
         singleton b
@@ -265,17 +265,36 @@ module FlatArraySeq : S = struct
         let even_elts = even_elts s in
         let odd_elts = odd_elts s in
         let s' = helper f b (combine f b even_elts odd_elts) in
-        let half_sums = combine f b even_elts s' in
+        (* Since elements of s' represents left prefix sum, order must be reversed so that communativity is not required *)
+        let half_sums = combine f b s' even_elts in
         let body idx =
           if idx mod 2 = 0 then nth s' (idx / 2) else nth half_sums (idx / 2)
         in
         tabulate (body) (length s)
     in
     if length s = 0 then empty () else helper f b s
+  
+  (* The NESL algorithm doesn't include the value at the index as part of the prefix sum,
+     so that prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 2]) s[i - 1]).
+     However, the API specifies that prefix sum should be inclusive, so that
+     prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 1]) s[i])
+     As a workaround, combine each element to the exclusive prefix sum to
+     match the inclusive prefix specified by the API
+     *)
+  let nesl_inclusive_scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    let exlcusive_scan = nesl_exclusive_scan f b s in
+    tabulate (fun i -> f (nth exlcusive_scan i) (nth s i)) (length s)
+
+
+  let fenwick_scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
+    let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
+    collapse_fenwick_tree f b Defines.sequential_cutoff tree size
+  
+  let scan = fenwick_scan
  
   let flatten (ss: 'a t t): 'a t =
     let lens = map (fun s -> length s) ss in
-    let total_len = reduce (+) 0 lens in
+    let total_len = tree_reduce (+) 0 lens in
     let starts = scan (+) 0 lens in
     let arr: 'a array = Array_handler.get_uninitialized total_len in
     parallel_for (length ss) (fun i -> 
@@ -286,10 +305,6 @@ module FlatArraySeq : S = struct
       )
     );
     arr
-
-  let scan_alt (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a t): 'a t =
-    let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
-    collapse_fenwick_tree f b Defines.sequential_cutoff tree size
 end
 
 
@@ -359,6 +374,15 @@ module NestedArraySeq : S = struct
       Array.iter f section
     in
     Array.iter inner_iter s.contents
+  
+  let iteri (f: int -> 'a -> unit) (s: 'a t): unit =
+    let modified_f section_num i v =
+      f (s.grain * section_num + i) v
+    in
+    let inner_iteri (section_num: int) (section: 'a array): unit =
+      Array.iteri (modified_f section_num) section
+    in
+    Array.iteri inner_iteri s.contents
 
   let cons (x: 'a) (s: 'a t): 'a t =
     let len = length s in
@@ -450,7 +474,7 @@ module NestedArraySeq : S = struct
     {contents = new_contents; grain = s.grain; num_sections = s.num_sections; length = s.length}
 
  
-  let flatten (ss: 'a t t): 'a t =
+  let flatten (ss: 'a t t): 'a t =    
     let lengths = map length ss in
     (* TODO: Can save a bit of recomputation here with reduce and scan *)
     let total_len = reduce (+) 0 lengths in
@@ -471,4 +495,4 @@ module NestedArraySeq : S = struct
     {contents = new_contents; grain = grain; num_sections = num_sections; length = total_len}
 end
 
-module S = NestedArraySeq
+module S = FlatArraySeq
