@@ -8,7 +8,7 @@ let speclist = ["-num_domains", (Arg.Set_int domains_arg), "Manually set the num
 
 let _ = Arg.parse speclist (fun _ -> ()) "[num_domains]"
 
-(* Ensure value is non-negative *)
+(* TODO: Ensure value is non-negative *)
 
 let num_domains = !domains_arg
 
