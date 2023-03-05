@@ -1,6 +1,9 @@
-let empty_int_array (len: int): int array =
-  Array.make len 0
+external get_memset_array: int -> 'a array = "caml_make_uninitialized_vect"
 
-let get_uninitialized (len: int): 'a array =
-  Obj.magic (empty_int_array len)
+let empty_int_array (len: int): 'a array =
+  Obj.magic (Array.make len (-1))
+
+let get_uninitialized =
+  get_memset_array
+
   

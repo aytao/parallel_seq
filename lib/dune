@@ -1,4 +1,7 @@
 (library
  (public_name seq)
  (name seq)
+ (foreign_stubs
+  (language c)
+  (names array_handler))
  (libraries domainslib))
