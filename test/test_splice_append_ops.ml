@@ -1,7 +1,7 @@
 open Seq
 open Sequence
 
-let n: int = Defines.sequential_cutoff * Defines.num_domains;;
+let n: int = (Defines.sequential_cutoff * Defines.num_domains) + 1;;
 
 let test_split n =
   let s = S.tabulate (fun i -> i) n in
