@@ -92,7 +92,7 @@ module FlatArraySeq : S = struct
 
   let cons (x: 'a) (s: 'a t): 'a t =
     let len = length s in
-    tabulate (fun i -> if i = 0 then x else s.(i + 1)) (len + 1)
+    tabulate (fun i -> if i = 0 then x else s.(i - 1)) (len + 1)
 
   let singleton (x: 'a): 'a t =
     Array.make 1 x
@@ -386,7 +386,7 @@ module NestedArraySeq : S = struct
 
   let cons (x: 'a) (s: 'a t): 'a t =
     let len = length s in
-    tabulate (fun i -> if i = 0 then x else nth s (i + 1)) (len + 1)
+    tabulate (fun i -> if i = 0 then x else nth s (i - 1)) (len + 1)
 
   let singleton (x: 'a): 'a t =
     {contents = [|[|x|]|]; grain = 1; num_sections = 1; length = 1}
