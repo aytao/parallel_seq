@@ -18,6 +18,7 @@ let assert_all_full wa =
   done;
   ()
 
+let _ = print_endline "Running GC harmony test";;
 let s = S.tabulate f n;;
 assert_all_full weak_arr;;
 Gc.full_major ();

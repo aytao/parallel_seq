@@ -23,5 +23,6 @@ let test_iteri n: unit =
   S.iteri (fun i _ -> f r' i) s;
   assert (!r' = n)
 
+let _ = print_endline "Running iter test";;
 let _ = test_iter n;;
 let _ = test_iteri n;;
