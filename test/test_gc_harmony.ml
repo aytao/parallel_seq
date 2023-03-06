@@ -2,14 +2,13 @@ open Seq
 open Sequence
 
 type thing = Foo | Bar of int
-let n: int = (Defines.sequential_cutoff * Defines.num_domains);;
+let n: int = (Defines.sequential_cutoff * Defines.num_domains) + 1;;
 
 let weak_arr = Weak.create n;;
 
 let f i =
   let v = Bar i in
   Weak.set weak_arr i (Some v);
-  Gc.full_major ();
   v
 
 let is_all_full wa =
