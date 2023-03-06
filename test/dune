@@ -29,6 +29,6 @@
  (modules test_combine))
 
 (test
- (name test_splice_append_ops)
+ (name test_split_append_ops)
  (libraries seq)
- (modules test_splice_append_ops))
+ (modules test_split_append_ops))

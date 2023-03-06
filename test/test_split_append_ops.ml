@@ -2,7 +2,7 @@ open Seq
 open Sequence
 
 let n: int = (Defines.sequential_cutoff * Defines.num_domains) + 1;;
-let num_trials: int = 10
+let num_trials: int = 1_000
 
 let test_split n =
   let s = S.tabulate (fun i -> i) n in
@@ -25,6 +25,12 @@ let test_split n =
   done;
   check_split n;
   ()
+
+let test_cons n =
+  let s = S.tabulate (fun i -> i + 1) (n - 1) |> S.cons 0 in
+  let correct_vals = S.tabulate (fun i -> S.nth s i = i) n |>
+    S.reduce (&&) true in
+  assert correct_vals
 
 let _ = print_endline "Running split test";;
 let _ = test_split n;;
