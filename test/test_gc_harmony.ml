@@ -2,7 +2,7 @@ open Seq
 open Sequence
 
 type thing = Foo | Bar of int
-let n: int = (Defines.sequential_cutoff * Defines.num_domains) + 1;;
+let n: int = (Defines.sequential_cutoff * Defines.num_domains);;
 
 let weak_arr = Weak.create n;;
 
@@ -12,14 +12,12 @@ let f i =
   Gc.full_major ();
   v
 
-let assert_all_full wa =
-  for i = 0 to (Weak.length wa - 1) do
-    assert (Weak.check wa i);
-  done;
-  ()
+let is_all_full wa =
+  S.tabulate (fun i -> i) (Weak.length wa) |>
+  S.map_reduce (Weak.check wa) (&&) true
 
 let _ = print_endline "Running GC harmony test";;
 let s = S.tabulate f n;;
-assert_all_full weak_arr;;
+assert (is_all_full weak_arr);;
 Gc.full_major ();
-assert_all_full weak_arr;;
+assert (is_all_full weak_arr);;
