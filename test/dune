@@ -1,7 +1,22 @@
-(test
+(test ;Currently not used
  (name test_valid)
  (libraries seq)
  (modules test_valid))
+
+(test
+ (name test_array_handler)
+ (libraries seq)
+ (modules test_array_handler))
+
+(test
+ (name test_cast_pointer)
+ (libraries seq)
+ (modules test_cast_pointer))
+
+(test
+ (name test_gc_harmony)
+ (libraries seq)
+ (modules test_gc_harmony))
 
 (test
  (name test_iter)
