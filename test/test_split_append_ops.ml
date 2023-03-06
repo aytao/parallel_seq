@@ -34,3 +34,5 @@ let test_cons n =
 
 let _ = print_endline "Running split test";;
 let _ = test_split n;;
+let _ = print_endline "Running cons test";;
+let _ = test_cons n;;
