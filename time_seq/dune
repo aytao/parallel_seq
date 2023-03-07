@@ -1,6 +1,6 @@
 (executable
  (name time_seq)
- (libraries seq))
+ (libraries seq unix))
 
 (install
  (section bin)

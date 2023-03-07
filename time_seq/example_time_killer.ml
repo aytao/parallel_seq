@@ -1,4 +1,3 @@
-
 open Seq
 open Sequence
 
@@ -11,9 +10,9 @@ let g i =
   !x
 
 let f ():int =
-  let s = ParallelSeq.tabulate (fun i -> (i * i) + (g n) - (g n) - 1) n in
-  let s' = ParallelSeq.map (fun i -> if i mod 5 = 0 then 1 else 0) s
+  let s = S.tabulate (fun i -> (i * i) + (g n) - (g n) - 1) n in
+  let s' = S.map (fun i -> if i mod 5 = 0 then 1 else 0) s
   in
-  ParallelSeq.reduce (+) 0 s'
+  S.reduce (+) 0 s'
 
 let _ = print_endline (string_of_int (f ()));;
