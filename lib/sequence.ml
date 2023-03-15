@@ -21,10 +21,7 @@ module type S = sig
   val zip : ('a t * 'b t) -> ('a * 'b) t
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
-(* 
-  val build_fenwick_tree: ('a -> 'a -> 'a) -> 'a -> int -> 'a t -> ('a array * int)
-  val reduce_alt : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
-  val scan_alt: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t *)
+  val filter: ('a -> bool) -> 'a t -> 'a t
 end
 
 
@@ -305,6 +302,20 @@ module FlatArraySeq : S = struct
       )
     );
     arr
+
+  let filter (pred: 'a -> bool) (s: 'a t): 'a t =
+    let length = length s in
+    if length = 0 then empty () else
+    let bit_vec = map (fun v -> if pred v then 1 else 0) s in
+    let prefixes = scan (+) 0 bit_vec in
+    let filtered_length = nth prefixes (length - 1) in
+    let filtered: 'a array = Array_handler.get_uninitialized filtered_length in
+    let body idx =
+      let l = if idx = 0 then 0 else nth prefixes (idx - 1) in
+      if nth prefixes idx > l then filtered.(l) <- nth s idx else ()
+    in
+    parallel_for length body;
+    filtered
 end
 
 
@@ -493,6 +504,9 @@ module NestedArraySeq : S = struct
       )
     );
     {contents = new_contents; grain = grain; num_sections = num_sections; length = total_len}
+
+  let filter (pred: 'a -> bool) (s: 'a t): 'a t =
+    failwith "Unimplemented"
 end
 
 module S = FlatArraySeq

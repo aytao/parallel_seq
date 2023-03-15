@@ -19,6 +19,7 @@ module type S = sig
   val zip : ('a t * 'b t) -> ('a * 'b) t
   val split : 'a t -> int -> 'a t * 'a t
   val scan: ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
+  val filter: ('a -> bool) -> 'a t -> 'a t
 end
 
 module FlatArraySeq : S
