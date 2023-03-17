@@ -1,4 +1,5 @@
 open Seq
+open Sequence
 
 module IntTuple : Map.OrderedType with type t = (int * int) =
 struct
@@ -62,7 +63,7 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   
   let dimensions mat = Array.length mat, Array.length mat.(0)
 
-  let dot v1 v2 b =
+  let dot v1 v2 =
     assert (Array.length v1 = Array.length v2);
     let acc = ref b in
     for i = 0 to (Array.length v1 - 1) do
@@ -74,7 +75,10 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     Array.init (Array.length mat.(0)) (fun i -> Array.init (Array.length mat) (fun j -> mat.(j).(i)))
   
   let vect_mult mat vect =
-    Array.init (Array.length mat) (fun i -> dot mat.(i) vect b)
+    let m, n = dimensions mat in
+    let len = Array.length vect in
+    if n != len then raise (Invalid_argument "ArrayMatrix.vect_mult") else
+    Array.init (Array.length mat) (fun i -> dot mat.(i) vect)
   
   let matrix_mult mat1 mat2 =
     let m1, n1 = dimensions mat1 in
@@ -83,4 +87,39 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let mat2T = transpose mat2 in
     let resultT = Array.init n2 (fun i -> vect_mult mat1 mat2T.(i)) in
     transpose resultT
+end
+
+module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
+  type elt = E.t
+  type vect = elt S.t
+  type matrix = elt S.t S.t
+  let b = E.b
+  
+  let of_dok m n b map =
+    failwith "Unimplemented"
+
+  let get row col mat =
+    let _ = check_index row col (S.length mat) (S.length (S.nth mat 0)) "SeqMatrix.get" in
+    S.nth (S.nth mat row) col
+  
+  let dimensions mat = 
+    failwith "Unimplemented"
+
+  let dot v1 v2 =
+    assert (S.length v1 = S.length v2);
+    S.tabulate (fun i -> E.mult (S.nth v1 i) (S.nth v2 i)) (S.length v1)
+    |> S.reduce E.add b
+
+  let transpose mat =
+    S.tabulate (fun i ->
+      S.tabulate (fun j ->
+        S.nth (S.nth mat j) i
+      ) (S.length mat)
+    ) (S.length (S.nth mat 0)) 
+  
+  let vect_mult mat vect =
+    S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
+  
+  let matrix_mult mat1 mat2 =   
+    failwith "Unimplemented"
 end

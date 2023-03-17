@@ -1,3 +1,6 @@
+open Seq
+open Sequence
+
 module DictOfKeys : Map.S with type key = (int * int)
 
 module type MatrixElt =
@@ -22,3 +25,4 @@ sig
 end
 
 module ArrayMatrix(E : MatrixElt) : MATRIX with type elt = E.t
+module SeqMatrix(E : MatrixElt)(S : S): MATRIX with type elt = E.t
