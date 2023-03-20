@@ -96,14 +96,19 @@ module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
   let b = E.b
   
   let of_dok m n b map =
-    failwith "Unimplemented"
+    let _ = check_size_nonzero m n "SeqMatrix.of_map" in
+    S.tabulate (fun i -> 
+      S.tabulate (fun j ->
+        if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b
+      ) n  
+    ) m
 
   let get row col mat =
     let _ = check_index row col (S.length mat) (S.length (S.nth mat 0)) "SeqMatrix.get" in
     S.nth (S.nth mat row) col
   
   let dimensions mat = 
-    failwith "Unimplemented"
+    S.length mat, S.length (S.nth mat 0)
 
   let dot v1 v2 =
     assert (S.length v1 = S.length v2);
@@ -121,5 +126,10 @@ module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
     S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
   
   let matrix_mult mat1 mat2 =   
-    failwith "Unimplemented"
+    let m1, n1 = dimensions mat1 in
+    let m2, n2 = dimensions mat2 in
+    if n1 != m2 then raise (Invalid_argument "SeqMatrix.matrix_mult") else
+    let mat2T = transpose mat2 in
+    let resultT = S.tabulate (fun i -> vect_mult mat1 (S.nth mat2T i)) n2 in
+    transpose resultT
 end
