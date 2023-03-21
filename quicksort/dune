@@ -1,9 +1,3 @@
-(executable
+(library
  (name quicksort)
- (modules quicksort sort)
  (libraries seq))
-
-(install
- (section bin)
- (files
-  (quicksort.exe as quicksort)))

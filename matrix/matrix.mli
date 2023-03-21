@@ -16,7 +16,7 @@ sig
   type elt
   type vect
   type matrix
-  val of_dok : int -> int -> elt -> elt DictOfKeys.t -> matrix
+  val of_dok : int -> int -> elt DictOfKeys.t -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
   val transpose: matrix -> matrix
