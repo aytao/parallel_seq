@@ -1,8 +1,9 @@
-(executable
- (name time)
- (libraries seq quicksort matrix))
+(executables
+ (names time_sort time_matrix)
+ (libraries seq quicksort matrix unix))
 
 (install
  (section bin)
  (files
-  (time.exe as time)))
+  (time_matrix.exe as time_matrix)
+  (time_sort.exe as time_sort)))
