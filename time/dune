@@ -1,0 +1,8 @@
+(executable
+ (name time)
+ (libraries seq quicksort matrix))
+
+(install
+ (section bin)
+ (files
+  (time.exe as time)))

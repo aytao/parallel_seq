@@ -16,7 +16,6 @@ sig
   type elt
   type vect
   type matrix
-  type arr_of_keys = (int * int) * elt
 
   val of_dok : int -> int -> elt DictOfKeys.t -> matrix
   val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
@@ -28,4 +27,5 @@ sig
 end
 
 module ArrayMatrix(E : MatrixElt) : MATRIX with type elt = E.t
-module SeqMatrix(E : MatrixElt)(S : S): MATRIX with type elt = E.t
+module SeqMatrix(E : MatrixElt)(S : S) : MATRIX with type elt = E.t
+module CRSMAtrix(E : MatrixElt)(S : S) : MATRIX with type elt = E.t
