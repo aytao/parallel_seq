@@ -2,13 +2,15 @@ open Seq
 open Sequence
 open Quicksort
 
+let compare_int_tuple (row1, col1 : int * int) (row2, col2 : int * int) = 
+  let cmp_r = compare row1 row2 in
+  if cmp_r = 0 then compare col1 col2 else cmp_r
+
 module IntTuple : Map.OrderedType with type t = (int * int) =
 struct
   type t = (int * int)
 
-  let compare (row1, col1 : t) (row2, col2 : t) = 
-    let cmp_r = compare row1 row2 in
-    if cmp_r = 0 then compare col1 col2 else cmp_r
+  let compare = compare_int_tuple
 end
 
 module type MatrixElt =
@@ -27,11 +29,12 @@ sig
   type vect
   type matrix
   val of_dok : int -> int -> elt DictOfKeys.t -> matrix
+  val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
   val transpose: matrix -> matrix
   val vect_mult : matrix -> vect -> vect
-  val matrix_mult : matrix -> matrix -> matrix
+  (* val matrix_mult : matrix -> matrix -> matrix *)
 end
 
 let check_index row col m n s =
@@ -40,6 +43,25 @@ let check_index row col m n s =
 
 let check_size_nonzero m n s =
   if m <= 0 || n <= 0 then raise (Invalid_argument s)
+
+let bin_search nth s compare i lo hi =
+  let rec helper lo hi =
+    if hi <= lo then -1
+    else
+      let mid = lo + (hi - lo / 2) in
+      let v = nth s mid in
+      let cmp = compare v i in
+      if cmp < 0 then helper (mid + 1) hi
+      else if cmp > 0 then helper lo mid
+      else mid
+  in
+  helper lo hi
+
+let sort_elt_seq sort elt_seq =
+  let cmp (tup1, _) (tup2, _) =
+    compare_int_tuple tup1 tup2
+  in
+  sort cmp elt_seq
 
 module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   type elt = E.t
@@ -56,6 +78,17 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
       mat.(row).(col) <- v
     in
     DictOfKeys.iter update_matrix map;
+    mat
+  
+  let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
+    let _ = check_size_nonzero m n "ArrayMatrix.of_map" in
+    let mat = Array.init m (fun i -> Array.make n b) in
+    let update_matrix elt =
+      let (row, col), v = elt in
+      let _ = check_index row col m n "ArrayMatrix.of_map" in
+      mat.(row).(col) <- v
+    in
+    Array.iter update_matrix elt_arr;
     mat
 
   let get row col mat =
@@ -97,11 +130,33 @@ module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
   type matrix = elt S.t S.t
   let b = E.b
   
+  module Sort = Quicksort(S)
+  let sort = Sort.quicksort
+  
   let of_dok m n map =
     let _ = check_size_nonzero m n "SeqMatrix.of_map" in
     S.tabulate (fun i -> 
       S.tabulate (fun j ->
         if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b
+      ) n  
+    ) m
+
+  let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
+    let elt_seq = sort_elt_seq sort (S.seq_of_array elt_arr) in
+    let get_val row col =
+      let cmp (tup1, _) (tup2, _) =
+        compare_int_tuple tup1 tup2
+      in
+      let tup = ((row, col), b) in
+      let idx = bin_search S.nth elt_seq cmp tup 0 (S.length elt_seq) in
+      if idx < 0 then b
+      else
+        let (_, elt) = S.nth elt_seq idx in
+        elt
+    in
+    S.tabulate (fun i -> 
+      S.tabulate (fun j ->
+        get_val i j
       ) n  
     ) m
 
@@ -146,44 +201,32 @@ module CRSMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
   module Sort = Quicksort(S)
   let sort = Sort.quicksort
 
-  let bin_search s i lo hi =
-    let rec helper lo hi =
-      if hi <= lo then -1
-      else
-        let mid = lo + (hi - lo / 2) in
-        let v = S.nth s mid in
-        if v < i then helper (mid + 1) hi
-        else if v > i then helper lo mid
-        else mid
-    in
-    helper lo hi
-
-  let of_elt_list (l: ((int * int) * elt) S.t) m n =
-    let cmp ((row1, col1), _) ((row2, col2), _) =
-      let cmp_r = Int.compare row1 row2 in
-      if cmp_r = 0 then Int.compare col1 col2 else cmp_r
-    in
-    let l = sort cmp l in
-    let elts = S.map (fun ((_, _), e) -> e) l in
-    let cols = S.map (fun ((_, c), _) -> c) l in
+  let of_elt_seq (s: ((int * int) * elt) S.t) m n =
+    let s = sort_elt_seq sort s in
+    let elts = S.map (fun ((_, _), e) -> e) s in
+    let cols = S.map (fun ((_, c), _) -> c) s in
 
     let inject ((r, _), _) = S.tabulate (fun i -> if i = r then 1 else 0) m in
     let combine counts1 counts2 =
       S.tabulate (fun i -> (S.nth counts1 i + S.nth counts2 i)) m
     in
     let zeros = S.tabulate (fun i -> 0) m in
-    let row_ptrs = S.map_reduce inject combine zeros l in
+    let row_ptrs = S.cons 0 (S.map_reduce inject combine zeros s) in
+
     {elts; cols; row_ptrs; m; n}
+  
+  let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
+    of_elt_seq (S.seq_of_array elt_arr) m n
 
   let of_dok m n map =
     let _ = check_size_nonzero m n "CRSMatrix.of_map" in
     let s = S.seq_of_array @@ Array.of_list @@ DictOfKeys.bindings map in
-    of_elt_list s m n
+    of_elt_seq s m n
 
   let get row col {elts; cols; row_ptrs; m; n} =
     let _ = check_index row col m n "CRSMatrix.get" in
     let row_start, row_end = S.nth row_ptrs row, S.nth row_ptrs (row + 1) in
-    let row_idx = bin_search cols col row_start row_end in
+    let row_idx = bin_search S.nth cols Int.compare col row_start row_end in
     if row_idx < 0 then b else S.nth elts (row_start + row_idx)
   
   let dimensions mat = 
@@ -199,7 +242,7 @@ module CRSMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
       (S.nth cols i, S.nth rows i), S.nth elts i
     in
     let list = S.tabulate zip (S.length elts) in
-    of_elt_list list n m
+    of_elt_seq list n m
     
   let vect_mult {elts; cols; row_ptrs; m; n} vect =
     let len = S.length vect in

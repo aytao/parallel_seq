@@ -16,12 +16,15 @@ sig
   type elt
   type vect
   type matrix
+  type arr_of_keys = (int * int) * elt
+
   val of_dok : int -> int -> elt DictOfKeys.t -> matrix
+  val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
   val transpose: matrix -> matrix
   val vect_mult : matrix -> vect -> vect
-  val matrix_mult : matrix -> matrix -> matrix
+  (* val matrix_mult : matrix -> matrix -> matrix *)
 end
 
 module ArrayMatrix(E : MatrixElt) : MATRIX with type elt = E.t
