@@ -27,5 +27,5 @@ sig
 end
 
 module ArrayMatrix(E : MatrixElt) : MATRIX with type elt = E.t
-module SeqMatrix(E : MatrixElt)(S : S) : MATRIX with type elt = E.t
-module CRSMAtrix(E : MatrixElt)(S : S) : MATRIX with type elt = E.t
+module SeqMatrix(E : MatrixElt) : MATRIX with type elt = E.t
+module CRSMatrix(E : MatrixElt) : MATRIX with type elt = E.t

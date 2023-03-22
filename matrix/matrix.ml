@@ -124,14 +124,11 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     transpose resultT
 end
 
-module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
+module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   type elt = E.t
   type vect = elt S.t
   type matrix = elt S.t S.t
   let b = E.b
-  
-  module Sort = Quicksort(S)
-  let sort = Sort.quicksort
   
   let of_dok m n map =
     let _ = check_size_nonzero m n "SeqMatrix.of_map" in
@@ -142,7 +139,7 @@ module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
     ) m
 
   let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
-    let elt_seq = sort_elt_seq sort (S.seq_of_array elt_arr) in
+    let elt_seq = sort_elt_seq quicksort (S.seq_of_array elt_arr) in
     let get_val row col =
       let cmp (tup1, _) (tup2, _) =
         compare_int_tuple tup1 tup2
@@ -192,17 +189,14 @@ module SeqMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
     transpose resultT
 end
 
-module CRSMatrix(E: MatrixElt)(S: S) : (MATRIX with type elt = E.t) = struct
+module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   type elt = E.t
   type vect = elt S.t
   type matrix = {elts: elt S.t; cols: int S.t; row_ptrs: int S.t; m: int; n: int}
   let b = E.b
-  
-  module Sort = Quicksort(S)
-  let sort = Sort.quicksort
 
   let of_elt_seq (s: ((int * int) * elt) S.t) m n =
-    let s = sort_elt_seq sort s in
+    let s = sort_elt_seq quicksort s in
     let elts = S.map (fun ((_, _), e) -> e) s in
     let cols = S.map (fun ((_, c), _) -> c) s in
 
