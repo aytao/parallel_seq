@@ -8,4 +8,4 @@ let s = S.tabulate (fun _ -> Random.float Float.max_float) n
 
 let s, elapsed_time = Time_utils.time (quicksort Float.compare) s;;
 
-Printf.printf "%f" elapsed_time
+Printf.printf "%f\n" elapsed_time

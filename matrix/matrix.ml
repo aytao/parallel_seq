@@ -18,7 +18,7 @@ sig
   type t
   val b : t
   val add : t -> t -> t
-  val mult : t -> t -> t
+  val mul : t -> t -> t
 end
 
 module DictOfKeys = Map.Make(IntTuple)
@@ -33,8 +33,10 @@ sig
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
   val transpose: matrix -> matrix
-  val vect_mult : matrix -> vect -> vect
-  (* val matrix_mult : matrix -> matrix -> matrix *)
+
+  val vect_of_array : elt array -> vect
+  val vect_mul : matrix -> vect -> vect
+  (* val matrix_mul : matrix -> matrix -> matrix *)
 end
 
 let check_index row col m n s =
@@ -101,26 +103,29 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     assert (Array.length v1 = Array.length v2);
     let acc = ref b in
     for i = 0 to (Array.length v1 - 1) do
-      acc := E.add !acc (E.mult v1.(i) v2.(i))
+      acc := E.add !acc (E.mul v1.(i) v2.(i))
     done;
     !acc
 
   let transpose mat =
     Array.init (Array.length mat.(0)) (fun i -> Array.init (Array.length mat) (fun j -> mat.(j).(i)))
+
+  let vect_of_array arr =
+    Array.copy arr
   
-  let vect_mult mat vect =
+  let vect_mul mat vect =
     let m, n = dimensions mat in
     let len = Array.length vect in
-    if n != len then raise (Invalid_argument "ArrayMatrix.vect_mult") else
+    if n != len then raise (Invalid_argument "ArrayMatrix.vect_mul") else
       (* TODO: Fix redundant length *)
     Array.init (Array.length mat) (fun i -> dot mat.(i) vect)
   
-  let matrix_mult mat1 mat2 =
+  let matrix_mul mat1 mat2 =
     let m1, n1 = dimensions mat1 in
     let m2, n2 = dimensions mat2 in
-    if n1 != m2 then raise (Invalid_argument "ArrayMatrix.matrix_mult") else
+    if n1 != m2 then raise (Invalid_argument "ArrayMatrix.matrix_mul") else
     let mat2T = transpose mat2 in
-    let resultT = Array.init n2 (fun i -> vect_mult mat1 mat2T.(i)) in
+    let resultT = Array.init n2 (fun i -> vect_mul mat1 mat2T.(i)) in
     transpose resultT
 end
 
@@ -166,7 +171,7 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
 
   let dot v1 v2 =
     assert (S.length v1 = S.length v2);
-    S.tabulate (fun i -> E.mult (S.nth v1 i) (S.nth v2 i)) (S.length v1)
+    S.tabulate (fun i -> E.mul (S.nth v1 i) (S.nth v2 i)) (S.length v1)
     |> S.reduce E.add b
 
   let transpose mat =
@@ -176,16 +181,18 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
       ) (S.length mat)
     ) (S.length (S.nth mat 0)) 
   
-  let vect_mult mat vect =
+  let vect_of_array = S.seq_of_array
+  
+  let vect_mul mat vect =
     (* TODO: Check dim *)
     S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
   
-  let matrix_mult mat1 mat2 =   
+  let matrix_mul mat1 mat2 =   
     let m1, n1 = dimensions mat1 in
     let m2, n2 = dimensions mat2 in
-    if n1 != m2 then raise (Invalid_argument "SeqMatrix.matrix_mult") else
+    if n1 != m2 then raise (Invalid_argument "SeqMatrix.matrix_mul") else
     let mat2T = transpose mat2 in
-    let resultT = S.tabulate (fun i -> vect_mult mat1 (S.nth mat2T i)) n2 in
+    let resultT = S.tabulate (fun i -> vect_mul mat1 (S.nth mat2T i)) n2 in
     transpose resultT
 end
 
@@ -205,8 +212,8 @@ module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
       S.tabulate (fun i -> (S.nth counts1 i + S.nth counts2 i)) m
     in
     let zeros = S.tabulate (fun i -> 0) m in
-    let row_ptrs = S.cons 0 (S.map_reduce inject combine zeros s) in
-
+    let row_counts = S.map_reduce inject combine zeros s in
+    let row_ptrs = S.cons 0 (S.scan (+) 0 row_counts) in
     {elts; cols; row_ptrs; m; n}
   
   let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
@@ -238,9 +245,11 @@ module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let list = S.tabulate zip (S.length elts) in
     of_elt_seq list n m
     
-  let vect_mult {elts; cols; row_ptrs; m; n} vect =
+  let vect_of_array = S.seq_of_array
+
+  let vect_mul {elts; cols; row_ptrs; m; n} vect =
     let len = S.length vect in
-    if n != len then raise (Invalid_argument "CRSMatrix.vect_mult") else
+    if n != len then raise (Invalid_argument "CRSMatrix.vect_mul") else
     let row_body row =
       let row_start, row_end = S.nth row_ptrs row, S.nth row_ptrs (row + 1) in
       S.tabulate (fun i ->
@@ -250,10 +259,10 @@ module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     in
     let row_tuple_seqs = S.tabulate row_body m in
     let row_dot row_seq =
-      S.map_reduce (fun (c, e) -> E.mult e (S.nth vect c)) E.add b row_seq
+      S.map_reduce (fun (c, e) -> E.mul e (S.nth vect c)) E.add b row_seq
     in
     S.map row_dot row_tuple_seqs
   
-  let matrix_mult mat1 mat2 = 
+  let matrix_mul mat1 mat2 = 
     failwith "Unimplemented"
 end

@@ -8,7 +8,7 @@ sig
   type t
   val b : t
   val add : t -> t -> t
-  val mult : t -> t -> t
+  val mul : t -> t -> t
 end
 
 module type MATRIX =
@@ -21,9 +21,10 @@ sig
   val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
-  val transpose: matrix -> matrix
-  val vect_mult : matrix -> vect -> vect
-  (* val matrix_mult : matrix -> matrix -> matrix *)
+  val transpose : matrix -> matrix
+  val vect_of_array : elt array -> vect
+  val vect_mul : matrix -> vect -> vect
+  (* val matrix_mul : matrix -> matrix -> matrix *)
 end
 
 module ArrayMatrix(E : MatrixElt) : MATRIX with type elt = E.t
