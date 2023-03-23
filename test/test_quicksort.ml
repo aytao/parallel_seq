@@ -2,7 +2,7 @@ open Seq
 open Sequence
 open Quicksort
 
-let n = Defines.(num_domains * sequential_cutoff * 10);;
+let n = 64000;;
 
 let test_quicksort n =
   let s = S.tabulate (fun _ -> Random.float Float.max_float) n
