@@ -1,5 +1,5 @@
 (executables
- (names time_sort time_matrix time_reduce)
+ (names time_sort time_matrix time_reduce time_map)
  (libraries seq quicksort matrix unix))
 
 (install
@@ -7,4 +7,5 @@
  (files
   (time_matrix.exe as time_matrix)
   (time_sort.exe as time_sort)
-  (time_reduce.exe as time_reduce)))
+  (time_reduce.exe as time_reduce)
+  (time_map.exe as time_map)))
