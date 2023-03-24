@@ -1,7 +1,7 @@
 open Seq
 open Sequence
 
-let n = Defines.(num_domains * sequential_cutoff * 10);;
+let n = Defines.(10000000);;
 
 let s = S.tabulate (fun _ -> Random.float 1.) n
 
