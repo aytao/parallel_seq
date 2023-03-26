@@ -6,7 +6,7 @@ def main():
     print("Usage: python", argv[0], "[time name]", "[max num_domains]")
     exit(1)
 
-  command_fmt = "dune exec --no-build -- %s -num_domains=%d"
+  command_fmt = "dune exec --no-build -- %s"
 
   command_fmt += (" -s=" + argv[3]) if len(argv) == 4 else ""
 
@@ -15,9 +15,13 @@ def main():
 
   os.system("dune build")
   
+  affinity_mask = {0}
   for i in range(1, max_num_domains + 1):
-    command = command_fmt % (test_name, i)
+    os.sched_setaffinity(0, affinity_mask)
+    command = command_fmt % test_name 
+    print(command)
     os.system(command)
+    affinity_mask.add(i)
 
 if __name__ == "__main__":
   main()

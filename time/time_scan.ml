@@ -1,7 +1,7 @@
 open Seq
 open Sequence
 
-let n = Defines.(10000000);;
+let n = Defines.(100000000);;
 
 let s = S.tabulate (fun _ -> Random.float 1.) n
 

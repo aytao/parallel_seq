@@ -35,8 +35,9 @@ let run (task: 'a Task.task): 'a =
   Task.run pool task
 
 let parallel_for (n: int) (body: (int -> unit)): unit =
+  let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
   run (fun _ ->
-    Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
+    Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
   )
 
 let both (f: 'a -> 'b) (x: 'a) (g: 'c -> 'd) (y: 'c): 'b * 'd =
@@ -509,4 +510,4 @@ module NestedArraySeq : S = struct
     failwith "Unimplemented"
 end
 
-module S = FlatArraySeq
+module S = NestedArraySeq
