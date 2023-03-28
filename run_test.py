@@ -19,8 +19,14 @@ def main():
   for i in range(1, max_num_domains + 1):
     os.sched_setaffinity(0, affinity_mask)
     command = command_fmt % test_name 
-    print(command)
+    
+    print("Running '%s' ..." % command, file = sys.stderr, end = "")
+    sys.stderr.flush()
+
     os.system(command)
+
+    print("Done", file = sys.stderr)
+    sys.stderr.flush()
     affinity_mask.add(i)
 
 if __name__ == "__main__":
