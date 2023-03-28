@@ -20,7 +20,7 @@ def main():
     os.sched_setaffinity(0, affinity_mask)
     command = command_fmt % test_name 
     
-    print("Running '%s' ..." % command, file = sys.stderr, end = "")
+    print("Running '%s' with '%d' domain(s)..." % (test_name, i), file = sys.stderr, end = "")
     sys.stderr.flush()
 
     os.system(command)
