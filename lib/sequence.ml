@@ -24,7 +24,7 @@ module type S = sig
   val filter: ('a -> bool) -> 'a t -> 'a t
 end
 
-
+let _ = print_endline "Hello"
 
 
 (* TODO: Address temp solution for domain count and pooling *)

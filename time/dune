@@ -1,6 +1,13 @@
 (executables
- (names time_sort time_matrix time_reduce time_map time_tabulate time_scan)
- (libraries seq quicksort matrix unix))
+ (names
+  time_sort
+  time_matrix
+  time_reduce
+  time_map
+  time_tabulate
+  time_scan
+  time_par_for)
+ (libraries seq quicksort matrix unix domainslib))
 
 (install
  (section bin)
@@ -10,4 +17,5 @@
   (time_reduce.exe as time_reduce)
   (time_map.exe as time_map)
   (time_tabulate.exe as time_tabulate)
-  (time_scan.exe as time_scan)))
+  (time_scan.exe as time_scan)
+  (time_par_for.exe as time_par_for)))
