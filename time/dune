@@ -8,7 +8,8 @@
   time_scan
   time_par_for
   time_block_matrix
-  time_seq_matrix)
+  time_seq_matrix
+  time_array_matrix)
  (libraries seq quicksort matrix unix domainslib))
 
 (install
@@ -22,4 +23,5 @@
   (time_scan.exe as time_scan)
   (time_par_for.exe as time_par_for)
   (time_block_matrix.exe as time_block_matrix)
-  (time_seq_matrix.exe as time_seq_matrix)))
+  (time_seq_matrix.exe as time_seq_matrix)
+  (time_array_matrix.exe as time_array_matrix)))
