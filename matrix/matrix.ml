@@ -199,12 +199,19 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
   
   let matrix_mul mat1 mat2 =   
-    let m1, n1 = dimensions mat1 in
-    let m2, n2 = dimensions mat2 in
-    if n1 != m2 then raise (Invalid_argument "SeqMatrix.matrix_mul") else
-    let mat2T = transpose mat2 in
-    let resultT = S.tabulate (fun i -> vect_mul mat1 (S.nth mat2T i)) n2 in
-    transpose resultT
+    let m, p = dimensions mat1 in
+    let p', n = dimensions mat2 in
+    if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul") else
+    let body i j =
+      let m1_i = S.nth mat1 i in
+      S.tabulate (fun k ->
+        E.mul (S.nth m1_i k) (S.nth (S.nth mat2 k) j) 
+      ) p
+      |> S.reduce E.add b
+    in
+    S.tabulate (fun i -> 
+      S.tabulate (body i) n
+    ) m
 end
 
 module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
@@ -418,24 +425,24 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let bm1 = blocks_of_mat mat1 m_secs p_secs in
     let bm2 = blocks_of_mat mat2 p_secs n_secs in
     let body i j =
+      let bm1_i = S.nth bm1 i in
       S.tabulate (fun k ->
-        let bm1_i = S.nth bm1 i in
         submatrix_mul (S.nth bm1_i k) (S.nth (S.nth bm2 k) j) 
-        ) p_secs
-        |> S.reduce submat_add Empty 
+      ) p_secs
+      |> S.reduce submat_add Empty 
     in
     let bres = S.tabulate (fun i ->
-          S.tabulate (body i) n_secs
-      ) m_secs
+      S.tabulate (body i) n_secs
+    ) m_secs
     in
     S.tabulate (fun i ->
       S.tabulate (fun j ->
-          let row_num, col_num = i / submat_size, j / submat_size in
-          let row_off, col_off = i mod submat_size, j mod submat_size in
-          let block = S.nth (S.nth bres row_num) col_num in
-          match block with
-          | Full block -> block.(row_off).(col_off)
-          | Empty -> failwith "Impossible"
-        ) n
-      ) m
+        let row_num, col_num = i / submat_size, j / submat_size in
+        let row_off, col_off = i mod submat_size, j mod submat_size in
+        let block = S.nth (S.nth bres row_num) col_num in
+        match block with
+        | Full block -> block.(row_off).(col_off)
+        | Empty -> failwith "Impossible"
+      ) n
+    ) m
 end
