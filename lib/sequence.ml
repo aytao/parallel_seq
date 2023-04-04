@@ -24,9 +24,6 @@ module type S = sig
   val filter: ('a -> bool) -> 'a t -> 'a t
 end
 
-let _ = print_endline "Hello"
-
-
 (* TODO: Address temp solution for domain count and pooling *)
 let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
   
@@ -510,4 +507,4 @@ module NestedArraySeq : S = struct
     failwith "Unimplemented"
 end
 
-module S = NestedArraySeq
+module S = FlatArraySeq

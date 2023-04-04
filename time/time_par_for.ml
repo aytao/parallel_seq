@@ -3,10 +3,8 @@ open Domainslib
 
 let n = 100000;;
 
-(* TODO: Address temp solution for domain count and pooling *)
 let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
-  
-(* TODO: Address nested run(?) *)
+
 let run (task: 'a Task.task): 'a =
   Task.run pool task
 

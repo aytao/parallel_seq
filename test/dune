@@ -37,3 +37,8 @@
  (name test_quicksort)
  (libraries seq quicksort)
  (modules test_quicksort))
+
+(test
+ (name test_mat_mul)
+ (libraries seq matrix)
+ (modules test_mat_mul))
