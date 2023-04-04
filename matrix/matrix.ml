@@ -362,7 +362,7 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let submatrix_mul sm1 sm2 =
     let m, p = sm1.m, sm1.n in
     let p', n = sm2.m, sm2.n in
-    if p != p' then raise (Invalid_argument "BlockMatrix.matrix_mul") else
+    if p != p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else
     let body r c =
       let acc = ref b in
       for i = 0 to (p - 1) do
@@ -403,8 +403,8 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let blocks_of_mat mat num_rows num_cols = S.tabulate (fun i ->
       S.tabulate (fun j ->
         let m, n = dimensions mat in
-        let m' = if i = m_secs - 1 then m mod submat_size else submat_size in
-        let n' = if j = n_secs - 1 then n mod submat_size else submat_size in
+        let m' = min (m - i * submat_size) submat_size in
+        let n' = min (n - j * submat_size) submat_size in
         { 
           elts = mat;
           row_start = i * submat_size;

@@ -1,7 +1,5 @@
 open Arg
 
-let n = 11;;
-
 let domains_arg = ref (Domain.recommended_domain_count ())
 let cutoff_arg = ref (100)
 
