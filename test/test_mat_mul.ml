@@ -2,15 +2,15 @@ open Seq
 open Matrix
 open Printexc
 
-let m = 10000
-let n = 15000
-let p = 20000
+let m = 1000
+let n = 1500
+let p = 200
 
-module Float_Elt = struct
-  type t = float
-  let b = 0.
-  let add = (+.)
-  let mul = ( *. )
+module Int_Elt = struct
+  type t = int
+  let b = 0
+  let add = (+)
+  let mul = ( * )
 end
 
 module MatrixMul(M: MATRIX) = struct
@@ -22,13 +22,13 @@ module MatrixMul(M: MATRIX) = struct
     Array.init m (fun i ->
       Array.init n (fun j -> M.get i j result))
 end
-module BlockMul = MatrixMul(BlockMatrix(Float_Elt))
-module SeqMul = MatrixMul(SeqMatrix(Float_Elt))
-module ArrayMul = MatrixMul(ArrayMatrix(Float_Elt))
+module BlockMul = MatrixMul(BlockMatrix(Int_Elt))
+module SeqMul = MatrixMul(SeqMatrix(Int_Elt))
+module ArrayMul = MatrixMul(ArrayMatrix(Int_Elt))
 
 let get_random_int_arr_arr m n =
   Array.init m (fun i ->
-    Array.init n (fun _ -> Random.float 256.))
+    Array.init n (fun _ -> Random.int 256))
 
 let test_mul () =
   let equal m1 m2 =
