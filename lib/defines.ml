@@ -2,7 +2,7 @@ open Arg
 
 let domains_arg = ref (Domain.recommended_domain_count ())
 let cutoff_arg = ref (100)
-let force_sequential_arg = ref (true)
+let force_sequential_arg = ref (false)
 
 let speclist = [
   ("-num_domains", (Arg.Set_int domains_arg), "Manually set the number of domains used");
