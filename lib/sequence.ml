@@ -125,12 +125,6 @@ let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
 let run (task: 'a Task.task): 'a =
   Task.run pool task
 
-let parallel_for (n: int) (body: (int -> unit)): unit =
-  let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
-  run (fun _ ->
-    Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
-  )
-
 let both (f: 'a -> 'b) (x: 'a) (g: 'c -> 'd) (y: 'c): 'b * 'd =
   run (fun _ ->
     let xp = Task.async pool (fun _ -> f x) in
@@ -144,6 +138,12 @@ module FlatArraySeq : S = struct
 
   let empty (): 'a t =
     [||]
+  
+  let parallel_for (n: int) (body: (int -> unit)): unit =
+    let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
+    run (fun _ ->
+      Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
+    )
 
   let tabulate (f: int -> 'a) (n: int): 'a t =
     (* TODO: Address array initialization *)
@@ -419,6 +419,12 @@ module NestedArraySeq : S = struct
   let num_domains = Defines.num_domains
 
   let ceil_div num den = (num + den - 1) / den
+  
+  let parallel_for (n: int) (body: (int -> unit)): unit =
+    let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
+    run (fun _ ->
+      Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
+    )
 
   let empty (): 'a t =
     {contents = [||]; grain = 0; num_sections = 0; length = 0}
