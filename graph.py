@@ -9,7 +9,7 @@ for line in sys.stdin:
 
 sequential_time = times[0]
 
-y = times[1:]
+y = [sequential_time / time for time in times[1:]]
 
 x = [i for i in range(1, len(y) + 1)]
 
