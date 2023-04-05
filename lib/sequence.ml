@@ -24,10 +24,104 @@ module type S = sig
   val filter: ('a -> bool) -> 'a t -> 'a t
 end
 
-(* TODO: Address temp solution for domain count and pooling *)
-let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
+module ArraySeq : S = struct
+  type 'a t = 'a array
+  let tabulate (f: int -> 'a) (n: int): 'a t =
+    Array.init n f
+
+  let seq_of_array (a: 'a array): 'a t =
+    Array.copy a
+
+  let array_of_seq (s: 'a t): 'a array =
+    Array.copy s
+
+  let iter = Array.iter
+
+  let iteri = Array.iteri
+
+  let length = Array.length
+
+  let empty (): 'a t =    
+    [||]
+
+  let cons (x: 'a) (s: 'a t): 'a t =
+    Array.append [|x|] s
+    
+  let singleton (x: 'a): 'a t =
+    [|x|]
+
+  let append = Array.append
+
+  let nth = Array.get
+
+  let map = Array.map
+
+  let map_reduce (f: 'a -> 'b) (g: 'b -> 'b -> 'b) (b: 'b) (s: 'a t): 'b =
+    let n = Array.length s in
+    let rec iter acc i =
+      if i = n then acc
+      else
+        iter (g acc (f s.(i))) (i + 1)
+    in
+    iter b 0
   
-(* TODO: Address nested run(?) *)
+  let reduce = Array.fold_left
+
+  let flatten (a: 'a array array) : 'a array =
+    let n = Array.length a in
+    let m = map_reduce Array.length (+) 0 a in
+    if m = 0 then
+      empty ()
+    else
+      let b = Array_handler.get_uninitialized m in
+      let rec copy i k =
+        if i = n then ()
+        else (
+          let len = Array.length a.(i) in
+          Array.blit (a.(i)) 0 b k len;
+          copy (i+1) (k+len)
+        )
+      in copy 0 0; b
+
+  let repeat (x: 'a) (n: int) : 'a t =
+    Array.make n x
+  
+  let zip ((s1, s2): 'a t * 'b t): ('a * 'b) t =
+    let len1, len2 = length s1, length s2 in
+    if len1 != len2 then
+      raise (Invalid_argument "ArraySeq.zip")
+    else
+      tabulate (fun i -> (s1.(i), s2.(i))) len1
+
+  let split s i = (Array.sub s 0 i, Array.sub s i (Array.length s - i))
+
+  let scan (f: 'a -> 'a -> 'a) (b: 'a) (s: 'a array) = 
+    let u = Array.copy s in
+    let n = Array.length s in 
+    let rec iter i x = if i=n then ()
+		       else let y = f x (u.(i))
+			    in Array.set u i y; iter (i+1) y
+    in iter 0 b; u
+  
+  let filter (pred: 'a -> bool) (s: 'a t): 'a t =
+    let matches = map pred s in
+    let num_matches = map_reduce (fun b -> if b then 1 else 0) (+) 0 matches in
+    let a = Array_handler.get_uninitialized num_matches in
+    let rec iter i next =
+      if next = num_matches then () else
+      if matches.(i) then (
+        a.(next) <- s.(i);
+        iter (i + 1) (next + 1)
+      )
+      else
+        iter (i + 1) next
+    in
+    iter 0 0;
+    a
+end
+
+let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
+
 let run (task: 'a Task.task): 'a =
   Task.run pool task
 
@@ -507,4 +601,8 @@ module NestedArraySeq : S = struct
     failwith "Unimplemented"
 end
 
-module S = FlatArraySeq
+let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
+
+let s = if Defines.force_sequential then (module ArraySeq : S) else (module FlatArraySeq : S)
+
+module S = (val s : S)

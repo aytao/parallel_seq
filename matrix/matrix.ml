@@ -125,12 +125,20 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     Array.init (Array.length mat) (fun i -> dot mat.(i) vect)
   
   let matrix_mul mat1 mat2 =
-    let m1, n1 = dimensions mat1 in
-    let m2, n2 = dimensions mat2 in
-    if n1 != m2 then raise (Invalid_argument "ArrayMatrix.matrix_mul") else
-    let mat2T = transpose mat2 in
-    let resultT = Array.init n2 (fun i -> vect_mul mat1 mat2T.(i)) in
-    transpose resultT
+    let m, p = dimensions mat1 in
+    let p', n = dimensions mat2 in
+    if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul") else
+    let body i j =
+      let m1_i = mat1.(i) in
+      let acc = ref b in
+      for k = 0 to (p - 1) do
+        acc := E.add !acc (E.mul m1_i.(k) mat2.(k).(j))
+      done;
+      !acc
+    in
+    Array.init m (fun i ->
+      Array.init n (fun j ->
+        body i j))
 end
 
 module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
@@ -198,7 +206,7 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     (* TODO: Check dim *)
     S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
   
-  let matrix_mul mat1 mat2 =   
+  let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
     if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul") else
