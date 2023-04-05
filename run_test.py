@@ -6,19 +6,26 @@ def main():
     print("Usage: python", argv[0], "[time name]", "[max num_domains]")
     exit(1)
 
-  command_fmt = "dune exec --no-build -- %s"
-
-  command_fmt += (" -s=" + argv[3]) if len(argv) == 4 else ""
-
   test_name = argv[1]
   max_num_domains = int(argv[2])
 
+  command = "dune exec --no-build -- %s" % test_name
+
+  command += (" -s=" + argv[3]) if len(argv) == 4 else ""
+
   os.system("dune build")
+
+  print("Running '%s' sequentially..." % test_name, file = sys.stderr, end = "")
+  sys.stderr.flush()
   
+  os.system(command + " -f")
+
+  print("Done", file = sys.stderr)
+  sys.stderr.flush()
+
   affinity_mask = {0}
   for i in range(1, max_num_domains + 1):
     os.sched_setaffinity(0, affinity_mask)
-    command = command_fmt % test_name 
     
     print("Running '%s' with %d domain(s)..." % (test_name, i), file = sys.stderr, end = "")
     sys.stderr.flush()

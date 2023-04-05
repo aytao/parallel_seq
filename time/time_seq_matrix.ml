@@ -12,7 +12,14 @@ module Float_Elt = struct
   let mul = Float.mul
 end
 
-module FloatMatrix = SeqMatrix(Float_Elt)
+(* Accommodate sequential override *)
+let fm =
+  if Defines.force_sequential then
+    (module ArrayMatrix(Float_Elt) : MATRIX with type elt = float)
+  else
+    (module SeqMatrix(Float_Elt) : MATRIX with type elt = float)
+
+module FloatMatrix = (val fm : MATRIX with type elt = float)
 
 let get_random_float_arr_arr m n =
   Array.init m (fun i ->

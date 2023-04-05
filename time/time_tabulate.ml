@@ -10,6 +10,9 @@ let slow_divide n _ =
   in
   aux n 1. 0
 
+(* Ensure that module evaluation isn't counted in time *)
+let _ = S.empty ()
+
 let s, elapsed_time = Time_utils.time (S.tabulate (slow_divide (1000.))) n;;
 
 Printf.printf "%f\n" elapsed_time
