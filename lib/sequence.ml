@@ -125,12 +125,6 @@ let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
 let run (task: 'a Task.task): 'a =
   Task.run pool task
 
-let parallel_for (n: int) (body: (int -> unit)): unit =
-  let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
-  run (fun _ ->
-    Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
-  )
-
 let both (f: 'a -> 'b) (x: 'a) (g: 'c -> 'd) (y: 'c): 'b * 'd =
   run (fun _ ->
     let xp = Task.async pool (fun _ -> f x) in
@@ -139,6 +133,12 @@ let both (f: 'a -> 'b) (x: 'a) (g: 'c -> 'd) (y: 'c): 'b * 'd =
   )
 
 module FlatArraySeq : S = struct
+
+  let parallel_for (n: int) (body: (int -> unit)): unit =
+    let chunk_size = max Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
+    run (fun _ ->
+      Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
+    )
 
   type 'a t = 'a Array.t
 
@@ -420,6 +420,12 @@ module NestedArraySeq : S = struct
 
   let ceil_div num den = (num + den - 1) / den
 
+  (* Parallelism always used at domain level, so chunks should be 1 *)
+  let parallel_for (n: int) (body: (int -> unit)): unit =
+    run (fun _ ->
+      Task.parallel_for ~chunk_size:1 ~start:0 ~finish:(n - 1) ~body:body pool  
+    )
+
   let empty (): 'a t =
     {contents = [||]; grain = 0; num_sections = 0; length = 0}
 
@@ -603,6 +609,6 @@ end
 
 let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
 
-let s = if Defines.force_sequential then (module ArraySeq : S) else (module FlatArraySeq : S)
+let s = if Defines.force_sequential then (module ArraySeq : S) else (module NestedArraySeq : S)
 
 module S = (val s : S)
