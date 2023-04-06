@@ -14,9 +14,9 @@ end
 
 (* Accommodate sequential override *)
 let fm =
-  if Defines.force_sequential then
+  (* if Defines.force_sequential then
     (module ArrayMatrix(Float_Elt) : MATRIX with type elt = float)
-  else
+  else *)
     (module BlockMatrix(Float_Elt) : MATRIX with type elt = float)
 
 module FloatMatrix = (val fm : MATRIX with type elt = float)
