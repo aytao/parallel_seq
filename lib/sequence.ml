@@ -140,9 +140,8 @@ module FlatArraySeq : S = struct
     [||]
   
   let parallel_for (n: int) (body: (int -> unit)): unit =
-    let chunk_size = min Defines.sequential_cutoff (n / (Task.get_num_domains pool)) in
     run (fun _ ->
-      Task.parallel_for ~chunk_size:chunk_size ~start:0 ~finish:(n - 1) ~body:body pool  
+      Task.parallel_for ~start:0 ~finish:(n - 1) ~body:body pool  
     )
 
   let tabulate (f: int -> 'a) (n: int): 'a t =
