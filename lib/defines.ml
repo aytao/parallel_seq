@@ -9,9 +9,10 @@ let speclist = [
   ("-s", (Arg.Set_int cutoff_arg), "Manually adjust the sequential cutoff");
   ("-f", (Arg.Set force_sequential_arg), "Force sequencial implementation")];;
 
-let _ = Arg.parse speclist (fun _ -> ()) "[num_domains] [s]"
+let _ = Arg.parse speclist (fun _ -> ()) "[num_domains] [s]";;
 
-(* TODO: Ensure value is non-negative *)
+if !domains_arg <= 0 then failwith "Must have at least one domain"
+else if !cutoff_arg <= 0 then failwith "Sequential cutoff must be positive"
 
 let num_domains = !domains_arg
 let sequential_cutoff = !cutoff_arg
