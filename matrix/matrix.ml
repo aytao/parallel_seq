@@ -238,15 +238,16 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
     if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul") else
-    let body i j =
-      let m1_i = S.nth mat1 i in
-      S.tabulate (fun k ->
-        E.mul (S.nth m1_i k) (S.nth (S.nth mat2 k) j) 
-      ) p
-      |> S.reduce E.add b
+    let body r c =
+      let acc = ref b in
+      let m1_r = S.nth mat1 r in
+      for i = 0 to (p - 1) do
+        acc := E.add !acc (E.mul (S.nth m1_r i) (S.nth (S.nth mat2 i) c)) 
+      done;
+      !acc
     in
-    S.tabulate (fun i -> 
-      S.tabulate (body i) n
+    S.tabulate (fun r -> 
+      S.tabulate (body r) n
     ) m
 end
 
