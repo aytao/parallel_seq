@@ -44,7 +44,7 @@ let check_index row col m n s =
   if row < 0 || row >= m || col < 0 || col >= n then
     raise (Invalid_argument s)
 
-let check_size_nonzero m n s =
+let check_size_legal m n s =
   if m <= 0 || n <= 0 then raise (Invalid_argument s)
 
 let bin_search nth s compare i lo hi =
@@ -66,6 +66,16 @@ let sort_elt_seq sort elt_seq =
   in
   sort cmp elt_seq
 
+type row_len = Base | Same of int | Diff
+
+let combine_row_len al1 al2 =
+  match al1, al2 with
+  | (Diff, _) | (_, Diff) -> Diff
+  | Base, _ -> al2
+  | _, Base -> al1
+  | Same i, Same j ->
+    if i = j then Same i else Diff
+
 module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   type elt = E.t
   type vect = elt array
@@ -73,7 +83,7 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let b = E.b
   
   let of_dok m n map =
-    let _ = check_size_nonzero m n "ArrayMatrix.of_map" in
+    let _ = check_size_legal m n "ArrayMatrix.of_map" in
     let mat = Array.init m (fun i -> Array.make n b) in
     let update_matrix k v =
       let row, col = k in
@@ -84,7 +94,7 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     mat
   
   let of_elt_arr (elt_arr: ((int * int) * elt) array) m n =
-    let _ = check_size_nonzero m n "ArrayMatrix.of_map" in
+    let _ = check_size_legal m n "ArrayMatrix.of_map" in
     let mat = Array.init m (fun i -> Array.make n b) in
     let update_matrix elt =
       let (row, col), v = elt in
@@ -94,8 +104,17 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     Array.iter update_matrix elt_arr;
     mat
 
-  let of_2d_arr (elt_arr_arr: elt array array) =
-    Array.init (Array.length elt_arr_arr) (fun i -> Array.copy elt_arr_arr.(i))
+  let of_2d_arr (eaa: elt array array) =
+    (* Check legal lengths, ensure all rows same length *)
+    let m = Array.length eaa in
+    let exn = (Invalid_argument "ArrayMatrix.of_2d_arr") in
+    if m <= 0 then raise exn else
+    let len = Array.length eaa.(0) in
+    let _ = Array.iter
+      (fun arr -> if Array.length arr != len then raise exn) eaa
+    in
+    (* init *)
+    Array.init (Array.length eaa) (fun i -> Array.copy eaa.(i))
 
   let get row col mat =
     let _ = check_index row col (Array.length mat) (Array.length mat.(0)) "ArrayMatrix.get" in
@@ -121,8 +140,7 @@ module ArrayMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     let m, n = dimensions mat in
     let len = Array.length vect in
     if n != len then raise (Invalid_argument "ArrayMatrix.vect_mul") else
-      (* TODO: Fix redundant length *)
-    Array.init (Array.length mat) (fun i -> dot mat.(i) vect)
+    Array.init (m) (fun i -> dot mat.(i) vect)
   
   let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
@@ -148,7 +166,7 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let b = E.b
   
   let of_dok m n map =
-    let _ = check_size_nonzero m n "SeqMatrix.of_map" in
+    let _ = check_size_legal m n "SeqMatrix.of_map" in
     S.tabulate (fun i -> 
       S.tabulate (fun j ->
         if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b
@@ -175,6 +193,14 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     ) m
 
   let of_2d_arr (eaa: elt array array) =
+    (* Check legal lengths, ensure all rows same length *)
+    let m = Array.length eaa in
+    let n = S.tabulate (fun i -> Same (Array.length eaa.(i))) m
+      |> S.reduce combine_row_len Base
+      |> function | Base | Diff -> 0 | Same i -> i
+    in
+    let _ = check_size_legal m n "SeqMatrix.get" in
+    (* init *)
     S.tabulate (fun i -> 
       S.tabulate (fun j ->
         eaa.(i).(j)
@@ -203,7 +229,9 @@ module SeqMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let vect_of_array = S.seq_of_array
   
   let vect_mul mat vect =
-    (* TODO: Check dim *)
+    let m, n = dimensions mat in
+    let len = S.length vect in
+    if n != len then raise (Invalid_argument "SeqMatrix.vect_mul") else
     S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
   
   let matrix_mul mat1 mat2 =
@@ -246,7 +274,7 @@ module CRSMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     of_elt_seq (S.seq_of_array elt_arr) m n
 
   let of_dok m n map =
-    let _ = check_size_nonzero m n "CRSMatrix.of_map" in
+    let _ = check_size_legal m n "CRSMatrix.of_map" in
     let s = S.seq_of_array @@ Array.of_list @@ DictOfKeys.bindings map in
     of_elt_seq s m n
 
@@ -312,7 +340,7 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let b = E.b
   
   let of_dok m n map =
-    let _ = check_size_nonzero m n "BlockMatrix.of_map" in
+    let _ = check_size_legal m n "BlockMatrix.of_map" in
     S.tabulate (fun i -> 
       S.tabulate (fun j ->
         if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b
@@ -339,6 +367,14 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
     ) m
 
   let of_2d_arr (eaa: elt array array) =
+    (* Check legal lengths, ensure all rows same length *)
+    let m = Array.length eaa in
+    let n = S.tabulate (fun i -> Same (Array.length eaa.(i))) m
+      |> S.reduce combine_row_len Base
+      |> function | Base | Diff -> 0 | Same i -> i
+    in
+    let _ = check_size_legal m n "SeqMatrix.get" in
+    (* init *)
     S.tabulate (fun i -> 
       S.tabulate (fun j ->
         eaa.(i).(j)
@@ -367,17 +403,18 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   let vect_of_array = S.seq_of_array
   
   let vect_mul mat vect =
-    (* TODO: Check dim *)
+    let m, n = dimensions mat in
+    let len = S.length vect in
+    if n != len then raise (Invalid_argument "BlockMatrix.vect_mul") else
     S.tabulate (fun i -> dot (S.nth mat i) vect E.mul E.add b) (S.length mat)
 
   let submatrix_get row col {elts; row_start; col_start; m; n} =
-    let _ = check_index row col m n "BlockMatrix.submatrix_get" in
+    (* let _ = check_index row col m n "BlockMatrix.submatrix_get" in *)
     S.nth (S.nth elts (row_start + row)) (col_start + col)
 
   let submatrix_mul sm1 sm2 =
-    let m, p = sm1.m, sm1.n in
-    let p', n = sm2.m, sm2.n in
-    if p != p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else
+    let m, p, n = sm1.m, sm1.n, sm2.n in
+    (* if p != p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else *)
     let body r c =
       let acc = ref b in
       for i = 0 to (p - 1) do
@@ -392,7 +429,7 @@ module BlockMatrix(E: MatrixElt) : (MATRIX with type elt = E.t) = struct
   
   let eaa_add eaa1 eaa2 =
     let dim eaa = Array.length eaa, Array.length eaa.(0) in
-    assert (dim eaa1 = dim eaa2);
+    (* assert (dim eaa1 = dim eaa2); *)
     let m, n = dim eaa1 in 
     Array.init m (fun i ->
       Array.init n (fun j ->
