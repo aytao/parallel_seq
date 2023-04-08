@@ -8,32 +8,31 @@ let p = 200
 
 module Int_Elt = struct
   type t = int
+
   let b = 0
-  let add = (+)
+  let add = ( + )
   let mul = ( * )
 end
 
-module MatrixMul(M: MATRIX) = struct
+module MatrixMul (M : MATRIX) = struct
   let mul elts1 elts2 =
     let mat1 = M.of_2d_arr elts1 in
     let mat2 = M.of_2d_arr elts2 in
     let result = M.matrix_mul mat1 mat2 in
     let m, n = M.dimensions result in
-    Array.init m (fun i ->
-      Array.init n (fun j -> M.get i j result))
+    Array.init m (fun i -> Array.init n (fun j -> M.get i j result))
 end
-module BlockMul = MatrixMul(BlockMatrix(Int_Elt))
-module SeqMul = MatrixMul(SeqMatrix(Int_Elt))
-module ArrayMul = MatrixMul(ArrayMatrix(Int_Elt))
+
+module BlockMul = MatrixMul (BlockMatrix (Int_Elt))
+module SeqMul = MatrixMul (SeqMatrix (Int_Elt))
+module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
 
 let get_random_int_arr_arr m n =
-  Array.init m (fun i ->
-    Array.init n (fun _ -> Random.int 256))
+  Array.init m (fun i -> Array.init n (fun _ -> Random.int 256))
 
 let test_mul () =
   let equal m1 m2 =
-    Array.for_all2 (fun r1 r2 ->
-      Array.for_all2 (=) r1 r2) m1 m2
+    Array.for_all2 (fun r1 r2 -> Array.for_all2 ( = ) r1 r2) m1 m2
   in
   let elts1 = get_random_int_arr_arr m n in
   let elts2 = get_random_int_arr_arr n p in
@@ -43,6 +42,12 @@ let test_mul () =
   assert (equal block_result seq_result);
   assert (equal array_result block_result)
 
-let _ = record_backtrace true;;
-let _ = print_endline "Running matrix multiplication test";;
-let _ = try (test_mul ()) with | e -> print_endline (Printexc.to_string e); print_backtrace stderr; assert false
+let _ = record_backtrace true
+let _ = print_endline "Running matrix multiplication test"
+
+let _ =
+  try test_mul ()
+  with e ->
+    print_endline (Printexc.to_string e);
+    print_backtrace stderr;
+    assert false

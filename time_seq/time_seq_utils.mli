@@ -1,1 +1,1 @@
-val time: (unit -> unit) -> int -> float
+val time : (unit -> unit) -> int -> float

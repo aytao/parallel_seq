@@ -7,23 +7,14 @@ let f wa int_array i =
   let bar_repr = Obj.repr w in
   Obj.set_field na_repr 0 bar_repr
 
-
-let _ = print_endline "Running cast pointer test";;
-
-let weak_arr: thing Weak.t = Weak.create 1;;
-let int_arr: int array = [|0|];;
-
-
+let _ = print_endline "Running cast pointer test"
+let weak_arr : thing Weak.t = Weak.create 1
+let int_arr : int array = [| 0 |]
 let _ = f weak_arr int_arr 10;;
 
 assert (Weak.check weak_arr 0);;
-
 Gc.full_major ();;
-
 assert (Weak.check weak_arr 0);;
-
 int_arr.(0) <- 0;;
 Gc.full_major ();;
-
-
-assert (not (Weak.check weak_arr 0));;
+assert (not (Weak.check weak_arr 0))
