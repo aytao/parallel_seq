@@ -30,3 +30,6 @@ _opam/
 
 # ocamlformat
 .ocamlformat
+
+# vscode
+.vscode/
