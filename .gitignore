@@ -33,3 +33,6 @@ _opam/
 
 # vscode
 .vscode/
+
+# indexing
+index_data/test_index_*.txt

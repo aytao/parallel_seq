@@ -1,9 +1,9 @@
 open Seq
 open Matrix
 
-let m = 1000
-let n = 1000
-let p = 1000
+let m = 2000
+let n = 2000
+let p = 2000
 
 module Float_Elt = struct
   type t = float
