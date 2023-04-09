@@ -80,7 +80,7 @@ let process (docs_filename : string) (chunk_start : int) (chunk_end : int) =
       | None -> accum
       | Some line -> (
           match String.split_on_char '@' line with
-          | [ id; title; contents ] ->
+          | [ id; contents ] ->
               let id = int_of_string id in
               next (add_page id contents accum)
           | _ -> failwith line)
@@ -108,8 +108,9 @@ let make_index (docs_filename : string) : doc_loc_index =
     Defines.num_domains
   |> S.reduce combine_indexes DMap.empty
 
-let index = make_index "index_data/test_index_1000.txt";;
+(* let index = make_index "index_data/test_index_1000.txt" *)
 
+(*
 DMap.iter
   (fun word seq ->
     print_string "Key: {";
@@ -125,4 +126,4 @@ DMap.iter
         print_string " ")
       seq;
     print_string "}\n")
-  index
+  index *)

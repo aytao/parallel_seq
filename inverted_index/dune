@@ -1,8 +1,0 @@
-(executable
- (name inverted_index)
- (libraries seq))
-
-(install
- (section bin)
- (files
-  (inverted_index.exe as inverted_index)))

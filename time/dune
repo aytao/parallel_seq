@@ -9,8 +9,9 @@
   time_par_for
   time_block_matrix
   time_seq_matrix
-  time_array_matrix)
- (libraries seq quicksort matrix unix domainslib))
+  time_array_matrix
+  time_index)
+ (libraries seq quicksort matrix unix domainslib index))
 
 (install
  (section bin)
@@ -24,4 +25,5 @@
   (time_par_for.exe as time_par_for)
   (time_block_matrix.exe as time_block_matrix)
   (time_seq_matrix.exe as time_seq_matrix)
-  (time_array_matrix.exe as time_array_matrix)))
+  (time_array_matrix.exe as time_array_matrix)
+  (time_index.exe as time_index)))
