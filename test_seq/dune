@@ -1,6 +1,6 @@
 (executable
  (name test_seq)
- (libraries seq))
+ (libraries seq index))
 
 (install
  (section bin)

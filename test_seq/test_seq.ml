@@ -1,8 +1,6 @@
 open Seq
 open Sequence
 open Utils
+open Index
 
-let s = S.tabulate (fun i -> i) 1000
-let evens = S.filter (fun x -> x mod 2 == 0) s;;
-
-Utils.print_sequence string_of_int evens
+let _ = Inverted_index.make_index "index_data/test_index_100.txt"

@@ -1,5 +1,7 @@
 open Seq
 open Sequence
+open Fast_append_list
+open Falist
 
 (* doc_id is a string, representing the document id, 
  * which will be used in the values in the index. *)
@@ -21,11 +23,11 @@ module DMap = Map.Make (String)
      int:  this word starts at the nth character of the file
  *)
 type location = doc_id * int * int
-type doc_loc_index = location array DMap.t
-type index_builder = location list DMap.t
+type doc_loc_index = location falist DMap.t
+type index_builder = location falist DMap.t
 
 let combine_indexes (x : doc_loc_index) (y : doc_loc_index) : doc_loc_index =
-  let combine k a b = Some (Array.append a b) in
+  let combine k a b = Some (Falist.append a b) in
   DMap.union combine x y
 
 let isalpha c =
@@ -40,8 +42,13 @@ let add_page (id : int) (contents : string) (index : index_builder) :
     index_builder =
   let add_word word w_loc c_loc index =
     let word = String.lowercase_ascii word in
-    let l = try DMap.find word index with Not_found -> [] in
-    DMap.add word ((id, w_loc, c_loc) :: l) index
+    let l =
+      try
+        let l = DMap.find word index in
+        back_cons (id, w_loc, c_loc) l
+      with Not_found -> singleton (id, w_loc, c_loc)
+    in
+    DMap.add word l index
   in
   let content_length = String.length contents in
   let rec f i w_loc index =
@@ -92,7 +99,7 @@ let process (docs_filename : string) (chunk_start : int) (chunk_end : int) =
       raise e
   in
   let () = close_in docs_file in
-  DMap.map (fun l -> List.rev l |> Array.of_list) index
+  index
 
 let make_index (docs_filename : string) : doc_loc_index =
   let ceil_div num den = (num + den - 1) / den in
@@ -108,22 +115,21 @@ let make_index (docs_filename : string) : doc_loc_index =
     Defines.num_domains
   |> S.reduce combine_indexes DMap.empty
 
-(* let index = make_index "index_data/test_index_1000.txt" *)
+(* let index = make_index "index_data/index_1000.txt";;
 
-(*
-DMap.iter
-  (fun word seq ->
-    print_string "Key: {";
-    print_string word;
-    print_string "} Values: {";
-    Array.iter
-      (fun (i, w, c) ->
-        print_int i;
-        print_string ":";
-        print_int w;
-        print_string ":";
-        print_int c;
-        print_string " ")
-      seq;
-    print_string "}\n")
-  index *)
+   DMap.iter
+     (fun word seq ->
+       print_string "Key: {";
+       print_string word;
+       print_string "} Values: {";
+       Falist.iter
+         (fun (i, w, c) ->
+           print_int i;
+           print_string ":";
+           print_int w;
+           print_string ":";
+           print_int c;
+           print_string " ")
+         seq;
+       print_string "}\n")
+     index *)
