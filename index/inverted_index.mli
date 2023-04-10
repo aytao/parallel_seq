@@ -12,3 +12,8 @@ type location = doc_id * doc_id * doc_id
 type doc_loc_index (* = location array DMap.t *)
 
 val make_index : string -> doc_loc_index
+
+type index_intermediate
+
+val parse : string -> index_intermediate
+val combine : index_intermediate -> doc_loc_index

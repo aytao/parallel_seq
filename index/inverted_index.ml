@@ -115,6 +115,24 @@ let make_index (docs_filename : string) : doc_loc_index =
     Defines.num_domains
   |> S.reduce combine_indexes DMap.empty
 
+type index_intermediate = doc_loc_index S.t
+
+let parse (docs_filename : string) : index_intermediate =
+  let ceil_div num den = (num + den - 1) / den in
+  let docs_file = open_in_bin docs_filename in
+  let file_len = in_channel_length docs_file in
+  let chunk_size = ceil_div file_len Defines.num_domains in
+  let () = close_in_noerr docs_file in
+  S.tabulate
+    (fun i ->
+      let chunk_start = i * chunk_size in
+      let chunk_end = min ((i + 1) * chunk_size) file_len in
+      process docs_filename chunk_start chunk_end)
+    Defines.num_domains
+
+let combine (ii : index_intermediate) : doc_loc_index =
+  S.reduce combine_indexes DMap.empty ii
+
 (* let index = make_index "index_data/index_1000.txt";;
 
    DMap.iter
