@@ -3,17 +3,20 @@ open Sequence
 open Fast_append_list
 open Falist
 
-(* doc_id is a string, representing the document id, 
- * which will be used in the values in the index. *)
-module DocID = struct
-  type t = int
-
-  let compare = compare
-end
-
-type doc_id = DocID.t
+type doc_id = int
 
 module DMap = Map.Make (String)
+
+type location = doc_id * int * int
+
+module Location = struct
+  type t = location
+
+  let compare (id, w, _) (id', w', _) =
+    match compare id id' with 0 -> compare w w' | c -> c
+end
+
+module LocSet = Set.Make (Location)
 
 (* doc_loc_index  a mapping with:
  * strings as keys
@@ -22,12 +25,10 @@ module DMap = Map.Make (String)
      int:  this word appears as the nth word in the file
      int:  this word starts at the nth character of the file
  *)
-type location = doc_id * int * int
-type doc_loc_index = location falist DMap.t
-type index_builder = location falist DMap.t
+type doc_loc_index = LocSet.t DMap.t
 
 let combine_indexes (x : doc_loc_index) (y : doc_loc_index) : doc_loc_index =
-  let combine k a b = Some (Falist.append a b) in
+  let combine k a b = Some (LocSet.union a b) in
   DMap.union combine x y
 
 let isalpha c =
@@ -38,17 +39,15 @@ let isnum c = Char.code '0' <= Char.code c && Char.code c <= Char.code '9'
 let isalnum c = isalpha c || isnum c
 
 (* Splits a string into words, each with a position-in-characters in the file *)
-let add_page (id : int) (contents : string) (index : index_builder) :
-    index_builder =
+let add_page (id : int) (contents : string) (index : doc_loc_index) :
+    doc_loc_index =
   let add_word word w_loc c_loc index =
     let word = String.lowercase_ascii word in
-    let l =
-      try
-        let l = DMap.find word index in
-        back_cons (id, w_loc, c_loc) l
-      with Not_found -> singleton (id, w_loc, c_loc)
+    let set =
+      (try DMap.find word index with Not_found -> LocSet.empty)
+      |> LocSet.add (id, w_loc, c_loc)
     in
-    DMap.add word l index
+    DMap.add word set index
   in
   let content_length = String.length contents in
   let rec f i w_loc index =
@@ -140,13 +139,11 @@ let combine (ii : index_intermediate) : doc_loc_index =
        print_string "Key: {";
        print_string word;
        print_string "} Values: {";
-       Falist.iter
+       LocSet.iter
          (fun (i, w, c) ->
            print_int i;
            print_string ":";
            print_int w;
-           print_string ":";
-           print_int c;
            print_string " ")
          seq;
        print_string "}\n")
