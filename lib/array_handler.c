@@ -26,7 +26,7 @@ CAMLprim value caml_make_uninitialized_vect(value len)
       res = caml_alloc_small(size, 0);
     }
     else if (size > Max_wosize)
-      caml_invalid_argument("Array.make");
+      caml_invalid_argument("Array_handler.get_uninitialized");
     else
     {
       res = caml_alloc_shr(size, 0);
