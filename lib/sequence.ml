@@ -109,15 +109,6 @@ module ArraySeq : S = struct
     a
 end
 
-(* let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
-   let run (task : 'a Task.task) : 'a = Task.run pool task
-
-   let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
-     run (fun _ ->
-         let xp = Task.async pool (fun _ -> f x) in
-         let y = g y in
-         (Task.await pool xp, y)) *)
-
 module ParallelArraySeq (P : Pool) : S = struct
   type 'a t = 'a Array.t
 
@@ -136,7 +127,6 @@ module ParallelArraySeq (P : Pool) : S = struct
   let empty () : 'a t = [||]
 
   let tabulate (f : int -> 'a) (n : int) : 'a t =
-    (* TODO: Address array initialization *)
     if n = 0 then empty ()
     else if n < 0 then
       raise (Invalid_argument "Cannot make sequence of negative length")
@@ -202,9 +192,7 @@ module ParallelArraySeq (P : Pool) : S = struct
     else
       let len = length s in
       let tree = clone s in
-      (* TODO: remove redundant params *)
-      let group_subtrees (tree : 'a array) (subtree_size : int) (k : int) : unit
-          =
+      let group_subtrees (subtree_size : int) : unit =
         let rec group_sequentially (subtree_num : int) : unit =
           let offset = subtree_num * subtree_size * k in
           let acc = ref b in
@@ -219,13 +207,13 @@ module ParallelArraySeq (P : Pool) : S = struct
         parallel_for (ceil_div len (subtree_size * k)) group_sequentially;
         ()
       in
-      let rec loop (tree : 'a array) (prev_size : int) : int =
+      let rec loop (prev_size : int) : int =
         if prev_size > len then prev_size / k
         else (
-          group_subtrees tree prev_size k;
-          loop tree (prev_size * k))
+          group_subtrees prev_size;
+          loop (prev_size * k))
       in
-      let last_size = loop tree 1 in
+      let last_size = loop 1 in
       (tree, last_size)
 
   let get_from_fenwick_tree (f : 'a -> 'a -> 'a) (b : 'a) (k : int)
