@@ -1,5 +1,9 @@
 open Sequence
 
-val print_flat_arr_sequence : ('a -> string) -> 'a FlatArraySeq.t -> unit
-val print_nested_arr_sequence : ('a -> string) -> 'a NestedArraySeq.t -> unit
-val print_sequence : ('a -> string) -> 'a S.t -> unit
+module type Utils = sig
+  type 'a s
+
+  val print_sequence : ('a -> string) -> 'a s -> unit
+end
+
+module Make (S : S) : Utils with type 'a s = 'a S.t

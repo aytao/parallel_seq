@@ -114,7 +114,7 @@ let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
       let y = g y in
       (Task.await pool xp, y))
 
-module FlatArraySeq : S = struct
+module ParallelArraySeq : S = struct
   type 'a t = 'a Array.t
 
   let empty () : 'a t = [||]
@@ -262,37 +262,6 @@ module FlatArraySeq : S = struct
     loop tree last_size;
     tree
 
-  let even_elts (s : 'a t) : 'a t =
-    let num_elts = (length s + 1) / 2 in
-    tabulate (fun i -> s.(i * 2)) num_elts
-
-  let odd_elts (s : 'a t) : 'a t =
-    let num_elts = length s / 2 in
-    tabulate (fun i -> s.((i * 2) + 1)) num_elts
-
-  (* Applies f evens.(i) odds.(i) for all valid indices in odd. If even is
-      one item longer, the last element of the array returned is f evens.(i) b *)
-  let combine (f : 'a -> 'a -> 'a) (b : 'a) (evens : 'a t) (odds : 'a t) : 'a t
-      =
-    let len = length evens in
-    let uneven = len != length odds in
-    let body (idx : int) : 'a =
-      let e = nth evens idx in
-      let o = if uneven && idx = len - 1 then b else nth odds idx in
-      f e o
-    in
-    tabulate body len
-
-  let reduce_layer (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    (* TODO: Consider using both? *)
-    combine f b (even_elts s) (odd_elts s)
-
-  let tree_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
-    let rec helper (b : 'a) (s : 'a t) : 'a =
-      if length s = 1 then nth s 0 else helper b (reduce_layer g b s)
-    in
-    if length s = 0 then b else helper b s
-
   let fenwick_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
     let tree, size = build_fenwick_tree g b Defines.sequential_cutoff s in
     get_from_fenwick_tree g b Defines.sequential_cutoff tree size (length s - 1)
@@ -307,35 +276,6 @@ module FlatArraySeq : S = struct
       (s : 'a t) : 'b =
     map inject s |> reduce combine b
 
-  (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
-  let nesl_exclusive_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let rec helper f b s =
-      if length s = 1 then singleton b
-      else
-        (* TODO: Consider using both? *)
-        let even_elts = even_elts s in
-        let odd_elts = odd_elts s in
-        let s' = helper f b (combine f b even_elts odd_elts) in
-        (* Since elements of s' represents left prefix sum, order must be reversed so that communativity is not required *)
-        let half_sums = combine f b s' even_elts in
-        let body idx =
-          if idx mod 2 = 0 then nth s' (idx / 2) else nth half_sums (idx / 2)
-        in
-        tabulate body (length s)
-    in
-    if length s = 0 then empty () else helper f b s
-
-  (* The NESL algorithm doesn't include the value at the index as part of the prefix sum,
-     so that prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 2]) s[i - 1]).
-     However, the API specifies that prefix sum should be inclusive, so that
-     prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 1]) s[i])
-     As a workaround, combine each element to the exclusive prefix sum to
-     match the inclusive prefix specified by the API
-  *)
-  let nesl_inclusive_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let exlcusive_scan = nesl_exclusive_scan f b s in
-    tabulate (fun i -> f (nth exlcusive_scan i) (nth s i)) (length s)
-
   let fenwick_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
     let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
     collapse_fenwick_tree f b Defines.sequential_cutoff tree size
@@ -344,7 +284,7 @@ module FlatArraySeq : S = struct
 
   let flatten (ss : 'a t t) : 'a t =
     let lens = map (fun s -> length s) ss in
-    let total_len = tree_reduce ( + ) 0 lens in
+    let total_len = reduce ( + ) 0 lens in
     let starts = scan ( + ) 0 lens in
     let arr : 'a array = Array_handler.get_uninitialized total_len in
     parallel_for (length ss) (fun i ->
@@ -371,206 +311,10 @@ module FlatArraySeq : S = struct
       filtered
 end
 
-module NestedArraySeq : S = struct
-  type 'a t = {
-    contents : 'a array array;
-    grain : int;
-    num_sections : int;
-    length : int;
-  }
-
-  let sequential_cutoff = Defines.sequential_cutoff
-  let num_domains = Defines.num_domains
-  let ceil_div num den = (num + den - 1) / den
-
-  let parallel_for (n : int) (body : int -> unit) : unit =
-    let chunk_size =
-      min Defines.sequential_cutoff (n / Task.get_num_domains pool)
-    in
-    run (fun _ ->
-        Task.parallel_for ~chunk_size ~start:0 ~finish:(n - 1) ~body pool)
-
-  let empty () : 'a t =
-    { contents = [||]; grain = 0; num_sections = 0; length = 0 }
-
-  (* TODO: Amount? Round up? Round down? *)
-  let calculate_grain (length : int) : int * int =
-    let grain = max sequential_cutoff (ceil_div length num_domains) in
-    let num_sections = ceil_div length grain in
-    (grain, num_sections)
-
-  let tabulate (f : int -> 'a) (n : int) : 'a t =
-    if n = 0 then empty ()
-    else if n < 0 then
-      raise (Invalid_argument "Cannot make sequence of negative length")
-    else
-      let grain, num_sections = calculate_grain n in
-      let outer_arr : 'a array array =
-        Array_handler.get_uninitialized num_sections
-      in
-
-      let sequential_init (i : int) : unit =
-        (* TODO: In parallel? *)
-        let section_length = min grain (n - (i * grain)) in
-        let section =
-          Array.init section_length (fun idx -> f ((i * grain) + idx))
-        in
-        (* TODO: Unsafe set? *)
-        outer_arr.(i) <- section
-      in
-      parallel_for num_sections sequential_init;
-      { contents = outer_arr; grain; num_sections; length = n }
-
-  (* NOTE: For internal use only *)
-  let set (contents : 'a array array) (grain : int) (idx : int) (v : 'a) : unit
-      =
-    let section_num = idx / grain in
-    let section_idx = idx mod grain in
-    contents.(section_num).(section_idx) <- v
-
-  let nth ({ contents; grain; num_sections; length } : 'a t) (n : int) : 'a =
-    let section_num = n / grain in
-    let section_idx = n mod grain in
-    contents.(section_num).(section_idx)
-
-  let length (s : 'a t) : int = s.length
-
-  let seq_of_array (arr : 'a array) : 'a t =
-    tabulate (fun i -> arr.(i)) (Array.length arr)
-
-  let array_of_seq (s : 'a t) : 'a array =
-    Array.init (length s) (fun i -> nth s i)
-
-  let clone (s : 'a t) : 'a t = tabulate (fun i -> nth s i) (length s)
-
-  let iter (f : 'a -> unit) (s : 'a t) : unit =
-    let inner_iter (section : 'a array) : unit = Array.iter f section in
-    Array.iter inner_iter s.contents
-
-  let iteri (f : int -> 'a -> unit) (s : 'a t) : unit =
-    let modified_f section_num i v = f ((s.grain * section_num) + i) v in
-    let inner_iteri (section_num : int) (section : 'a array) : unit =
-      Array.iteri (modified_f section_num) section
-    in
-    Array.iteri inner_iteri s.contents
-
-  let cons (x : 'a) (s : 'a t) : 'a t =
-    let len = length s in
-    tabulate (fun i -> if i = 0 then x else nth s (i - 1)) (len + 1)
-
-  let singleton (x : 'a) : 'a t =
-    { contents = [| [| x |] |]; grain = 1; num_sections = 1; length = 1 }
-
-  let append (s1 : 'a t) (s2 : 'a t) : 'a t =
-    let len1, len2 = (length s1, length s2) in
-    let body (idx : int) : 'a =
-      if idx < len1 then nth s1 idx else nth s2 (idx - len1)
-    in
-    tabulate body (len1 + len2)
-
-  let repeat (x : 'a) (n : int) : 'a t = tabulate (fun _ -> x) n
-
-  let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
-    let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then
-      raise (Invalid_argument "Sequences are different lengths")
-    else tabulate (fun i -> (nth s1 i, nth s2 i)) len1
-
-  let split (s : 'a t) (i : int) : 'a t * 'a t =
-    let len = length s in
-    if i < 0 || i > len then raise (Invalid_argument "i is outside of bounds")
-      (* TODO: Ensure reuse is safe *)
-    else if i = 0 then (empty (), s)
-    else if i = len then (s, empty ())
-    else
-      both
-        (tabulate (fun idx -> nth s idx))
-        i
-        (tabulate (fun idx -> nth s (i + idx)))
-        (len - i)
-
-  let reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
-    let sequential_reduce : 'a array -> 'a = Array.fold_left g b in
-    let section_sums = Array_handler.get_uninitialized s.num_sections in
-    let reduce_section (idx : int) : unit =
-      section_sums.(idx) <- sequential_reduce s.contents.(idx)
-    in
-    parallel_for s.num_sections reduce_section;
-    sequential_reduce section_sums
-
-  let map (f : 'a -> 'b) (s : 'a t) : 'b t =
-    let body idx = f (nth s idx) in
-    tabulate body (length s)
-
-  let map_reduce (inject : 'a -> 'b) (combine : 'b -> 'b -> 'b) (b : 'b)
-      (s : 'a t) : 'b =
-    map inject s |> reduce combine b
-
-  let scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let sequential_array_scan (arr : 'a array) (b' : 'a) : 'a =
-      let acc = ref b' in
-      for i = 0 to Array.length arr - 1 do
-        acc := f !acc arr.(i);
-        arr.(i) <- !acc
-      done;
-      !acc
-    in
-    let section_sums : 'a array =
-      Array_handler.get_uninitialized s.num_sections
-    in
-    let new_contents : 'a array array =
-      Array_handler.get_uninitialized s.num_sections
-    in
-    let scan_section (i : int) : unit =
-      let section_copy = Array.copy s.contents.(i) in
-      let section_sum = sequential_array_scan section_copy b in
-      section_sums.(i) <- section_sum;
-      new_contents.(i) <- section_copy
-    in
-    parallel_for s.num_sections scan_section;
-    sequential_array_scan section_sums b;
-    (* TODO: This could probably be a bit cleaner *)
-    let update_section (i : int) : unit =
-      if i = 0 then ()
-      else
-        let section_prefix = section_sums.(i - 1) in
-        let section = new_contents.(i) in
-        for j = 0 to Array.length section - 1 do
-          section.(j) <- f section_prefix section.(j)
-        done
-    in
-    parallel_for s.num_sections update_section;
-    {
-      contents = new_contents;
-      grain = s.grain;
-      num_sections = s.num_sections;
-      length = s.length;
-    }
-
-  let flatten (ss : 'a t t) : 'a t =
-    let lengths = map length ss in
-    (* TODO: Can save a bit of recomputation here with reduce and scan *)
-    let total_len = reduce ( + ) 0 lengths in
-    let starts = scan ( + ) 0 lengths in
-    let grain, num_sections = calculate_grain total_len in
-    let new_contents = Array_handler.get_uninitialized num_sections in
-    let set_contents (i : int) (v : 'a) : unit =
-      let section_num, section_idx = (i / grain, i mod grain) in
-      new_contents.(section_num).(section_idx) <- v
-    in
-    parallel_for (length ss) (fun i ->
-        let start = nth starts i in
-        let s = nth ss i in
-        parallel_for (length s) (fun j -> set_contents (start + j) (nth s j)));
-    { contents = new_contents; grain; num_sections; length = total_len }
-
-  let filter (pred : 'a -> bool) (s : 'a t) : 'a t = failwith "Unimplemented"
-end
-
 let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
 
 let s =
   if Defines.force_sequential then (module ArraySeq : S)
-  else (module FlatArraySeq : S)
+  else (module ParallelArraySeq : S)
 
 module S = (val s : S)
