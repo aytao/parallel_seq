@@ -113,6 +113,7 @@ module ParallelArraySeq (P : Pool) : S = struct
   type 'a t = 'a Array.t
 
   let pool = P.pool
+  let num_domains = Task.get_num_domains pool
   let run (task : 'a Task.task) : 'a = Task.run pool task
 
   let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
@@ -124,6 +125,7 @@ module ParallelArraySeq (P : Pool) : S = struct
   let parallel_for (n : int) (body : int -> unit) : unit =
     run (fun _ -> Task.parallel_for ~start:0 ~finish:(n - 1) ~body pool)
 
+  let ceil_div num den = (num + den - 1) / den
   let empty () : 'a t = [||]
 
   let tabulate (f : int -> 'a) (n : int) : 'a t =
@@ -203,7 +205,6 @@ module ParallelArraySeq (P : Pool) : S = struct
             tree.(idx - 1) <- !acc
           done
         in
-        let ceil_div num den = (num + den - 1) / den in
         parallel_for (ceil_div len (subtree_size * k)) group_sequentially;
         ()
       in
@@ -250,7 +251,6 @@ module ParallelArraySeq (P : Pool) : S = struct
             tree.(idx - 1) <- f tree.(prev_group_idx - 1) tree.(idx - 1)
           done
       in
-      let ceil_div num den = (num + den - 1) / den in
       parallel_for (ceil_div len prev_size) collapse_sequentially;
       ()
     in
@@ -263,9 +263,16 @@ module ParallelArraySeq (P : Pool) : S = struct
     loop tree last_size;
     tree
 
+  let get_fenwick_k (n : int) : int =
+    min (max 2 (n / num_domains)) Defines.sequential_cutoff
+
   let fenwick_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
-    let tree, size = build_fenwick_tree g b Defines.sequential_cutoff s in
-    get_from_fenwick_tree g b Defines.sequential_cutoff tree size (length s - 1)
+    match length s with
+    | 0 -> b
+    | len ->
+        let k = get_fenwick_k len in
+        let tree, size = build_fenwick_tree g b k s in
+        get_from_fenwick_tree g b k tree size (length s - 1)
 
   let reduce = fenwick_reduce
 
@@ -278,8 +285,12 @@ module ParallelArraySeq (P : Pool) : S = struct
     map inject s |> reduce combine b
 
   let fenwick_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
-    collapse_fenwick_tree f b Defines.sequential_cutoff tree size
+    match length s with
+    | 0 -> empty ()
+    | len ->
+        let k = get_fenwick_k len in
+        let tree, size = build_fenwick_tree f b k s in
+        collapse_fenwick_tree f b k tree size
 
   let scan = fenwick_scan
 
