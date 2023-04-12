@@ -114,7 +114,7 @@ let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
       let y = g y in
       (Task.await pool xp, y))
 
-module FlatArraySeq : S = struct
+module ParallelArraySeq : S = struct
   type 'a t = 'a Array.t
 
   let empty () : 'a t = [||]
@@ -306,35 +306,6 @@ module FlatArraySeq : S = struct
   let map_reduce (inject : 'a -> 'b) (combine : 'b -> 'b -> 'b) (b : 'b)
       (s : 'a t) : 'b =
     map inject s |> reduce combine b
-
-  (* Algorithm inspired by a power of 2-restrained implementation from NESL *)
-  let nesl_exclusive_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let rec helper f b s =
-      if length s = 1 then singleton b
-      else
-        (* TODO: Consider using both? *)
-        let even_elts = even_elts s in
-        let odd_elts = odd_elts s in
-        let s' = helper f b (combine f b even_elts odd_elts) in
-        (* Since elements of s' represents left prefix sum, order must be reversed so that communativity is not required *)
-        let half_sums = combine f b s' even_elts in
-        let body idx =
-          if idx mod 2 = 0 then nth s' (idx / 2) else nth half_sums (idx / 2)
-        in
-        tabulate body (length s)
-    in
-    if length s = 0 then empty () else helper f b s
-
-  (* The NESL algorithm doesn't include the value at the index as part of the prefix sum,
-     so that prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 2]) s[i - 1]).
-     However, the API specifies that prefix sum should be inclusive, so that
-     prefix[i] = f (f ( f(... f (b s[0]) ...) s[i - 1]) s[i])
-     As a workaround, combine each element to the exclusive prefix sum to
-     match the inclusive prefix specified by the API
-  *)
-  let nesl_inclusive_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    let exlcusive_scan = nesl_exclusive_scan f b s in
-    tabulate (fun i -> f (nth exlcusive_scan i) (nth s i)) (length s)
 
   let fenwick_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
     let tree, size = build_fenwick_tree f b Defines.sequential_cutoff s in
@@ -571,6 +542,6 @@ let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
 
 let s =
   if Defines.force_sequential then (module ArraySeq : S)
-  else (module FlatArraySeq : S)
+  else (module ParallelArraySeq : S)
 
 module S = (val s : S)

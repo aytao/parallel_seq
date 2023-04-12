@@ -23,6 +23,4 @@ module type S = sig
   val filter : ('a -> bool) -> 'a t -> 'a t
 end
 
-module FlatArraySeq : S
-module NestedArraySeq : S
 module S : S
