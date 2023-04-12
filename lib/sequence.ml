@@ -1,5 +1,11 @@
 open Domainslib
 
+module type Defines = sig
+  val num_domains : int
+  val sequential_cutoff : int
+  val force_sequential : bool
+end
+
 module type S = sig
   type 'a t
 
@@ -344,8 +350,26 @@ end
 
 let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
 
+(*
+ *
+ * Mess around with functors here
+ *
+ *)
 let s =
   if Defines.force_sequential then (module ArraySeq : S)
   else (module ParallelArraySeq : S)
 
 module S = (val s : S)
+
+module type SFunctor = functor (_ : Defines) -> S
+
+module RedundantArr (D : Defines) = ArraySeq
+
+let ra = (module RedundantArr : SFunctor)
+
+module RedundantPar (D : Defines) = ParallelArraySeq
+
+let rp = (module RedundantPar : SFunctor)
+let m = if true then ra else rp
+
+module Make = (val m)
