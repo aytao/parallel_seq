@@ -1,9 +1,7 @@
 open Domainslib
 
-module type Defines = sig
-  val num_domains : int
-  val sequential_cutoff : int
-  val force_sequential : bool
+module type Pool = sig
+  val pool : Task.pool
 end
 
 module type S = sig
@@ -111,22 +109,31 @@ module ArraySeq : S = struct
     a
 end
 
-let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
-let run (task : 'a Task.task) : 'a = Task.run pool task
+(* let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) ()
+   let run (task : 'a Task.task) : 'a = Task.run pool task
 
-let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
-  run (fun _ ->
-      let xp = Task.async pool (fun _ -> f x) in
-      let y = g y in
-      (Task.await pool xp, y))
+   let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
+     run (fun _ ->
+         let xp = Task.async pool (fun _ -> f x) in
+         let y = g y in
+         (Task.await pool xp, y)) *)
 
-module ParallelArraySeq : S = struct
+module ParallelArraySeq (P : Pool) : S = struct
   type 'a t = 'a Array.t
 
-  let empty () : 'a t = [||]
+  let pool = P.pool
+  let run (task : 'a Task.task) : 'a = Task.run pool task
+
+  let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
+    run (fun _ ->
+        let xp = Task.async pool (fun _ -> f x) in
+        let y = g y in
+        (Task.await pool xp, y))
 
   let parallel_for (n : int) (body : int -> unit) : unit =
     run (fun _ -> Task.parallel_for ~start:0 ~finish:(n - 1) ~body pool)
+
+  let empty () : 'a t = [||]
 
   let tabulate (f : int -> 'a) (n : int) : 'a t =
     (* TODO: Address array initialization *)
@@ -317,28 +324,12 @@ module ParallelArraySeq : S = struct
       filtered
 end
 
-let _ = if Defines.force_sequential then Task.teardown_pool pool else ()
-
-(*
- *
- * Mess around with functors here
- *
- *)
-let s =
+let m =
   if Defines.force_sequential then (module ArraySeq : S)
-  else (module ParallelArraySeq : S)
+  else
+    let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) () in
+    (module ParallelArraySeq (struct
+      let pool = pool
+    end) : S)
 
-module S = (val s : S)
-
-module type SFunctor = functor (_ : Defines) -> S
-
-module RedundantArr (D : Defines) = ArraySeq
-
-let ra = (module RedundantArr : SFunctor)
-
-module RedundantPar (D : Defines) = ParallelArraySeq
-
-let rp = (module RedundantPar : SFunctor)
-let m = if true then ra else rp
-
-module Make = (val m)
+module S = (val m)

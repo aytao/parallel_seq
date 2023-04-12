@@ -1,9 +1,3 @@
-module type Defines = sig
-  val num_domains : int
-  val sequential_cutoff : int
-  val force_sequential : bool
-end
-
 module type S = sig
   type 'a t
 
