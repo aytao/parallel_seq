@@ -1,7 +1,5 @@
 open Seq
 open Sequence
-open Fast_append_list
-open Falist
 
 type doc_id = int
 
