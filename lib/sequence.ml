@@ -268,37 +268,6 @@ module ParallelArraySeq : S = struct
     loop tree last_size;
     tree
 
-  let even_elts (s : 'a t) : 'a t =
-    let num_elts = (length s + 1) / 2 in
-    tabulate (fun i -> s.(i * 2)) num_elts
-
-  let odd_elts (s : 'a t) : 'a t =
-    let num_elts = length s / 2 in
-    tabulate (fun i -> s.((i * 2) + 1)) num_elts
-
-  (* Applies f evens.(i) odds.(i) for all valid indices in odd. If even is
-      one item longer, the last element of the array returned is f evens.(i) b *)
-  let combine (f : 'a -> 'a -> 'a) (b : 'a) (evens : 'a t) (odds : 'a t) : 'a t
-      =
-    let len = length evens in
-    let uneven = len != length odds in
-    let body (idx : int) : 'a =
-      let e = nth evens idx in
-      let o = if uneven && idx = len - 1 then b else nth odds idx in
-      f e o
-    in
-    tabulate body len
-
-  let reduce_layer (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
-    (* TODO: Consider using both? *)
-    combine f b (even_elts s) (odd_elts s)
-
-  let tree_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
-    let rec helper (b : 'a) (s : 'a t) : 'a =
-      if length s = 1 then nth s 0 else helper b (reduce_layer g b s)
-    in
-    if length s = 0 then b else helper b s
-
   let fenwick_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
     let tree, size = build_fenwick_tree g b Defines.sequential_cutoff s in
     get_from_fenwick_tree g b Defines.sequential_cutoff tree size (length s - 1)
@@ -321,7 +290,7 @@ module ParallelArraySeq : S = struct
 
   let flatten (ss : 'a t t) : 'a t =
     let lens = map (fun s -> length s) ss in
-    let total_len = tree_reduce ( + ) 0 lens in
+    let total_len = reduce ( + ) 0 lens in
     let starts = scan ( + ) 0 lens in
     let arr : 'a array = Array_handler.get_uninitialized total_len in
     parallel_for (length ss) (fun i ->
