@@ -53,6 +53,11 @@
  (modules time_array_handler)
  (libraries seq time_utils))
 
+(executable
+ (name time_array_make)
+ (modules time_array_make)
+ (libraries time_utils))
+
 (install
  (section bin)
  (files
