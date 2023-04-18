@@ -70,4 +70,5 @@
   (time_seq_matrix.exe as time_seq_matrix)
   (time_array_matrix.exe as time_array_matrix)
   (time_index.exe as time_index)
-  (time_array_handler.exe as time_array_handler)))
+  (time_array_handler.exe as time_array_handler)
+  (time_array_make.exe as time_array_make)))
