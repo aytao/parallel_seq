@@ -11,11 +11,7 @@ def main():
   test_name = argv[1]
   max_num_domains = int(argv[2])
 
-  command = "dune exec --no-build -- %s" % test_name
-
-  command += (" -s=" + argv[3]) if len(argv) == 4 else ""
-
-  os.system("dune build")
+  command = "dune exec -- %s" % test_name
 
   print("Running '%s' sequentially..." % test_name, file=sys.stderr, end="")
   sys.stderr.flush()

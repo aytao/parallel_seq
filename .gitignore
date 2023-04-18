@@ -35,4 +35,4 @@ _opam/
 .vscode/
 
 # indexing
-index_data/test_index_*.txt
+index_data/*

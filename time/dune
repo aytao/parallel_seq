@@ -1,29 +1,68 @@
-(executables
- (names
-  time_sort
-  time_matrix
-  time_reduce
-  time_map
-  time_tabulate
-  time_scan
-  time_par_for
-  time_block_matrix
-  time_seq_matrix
-  time_array_matrix
-  time_index)
- (libraries seq quicksort matrix unix domainslib index))
+(library
+ (name time_utils)
+ (modules time_utils)
+ (libraries unix))
+
+(executable
+ (name time_reduce)
+ (modules time_reduce)
+ (libraries seq time_utils))
+
+(executable
+ (name time_map)
+ (modules time_map)
+ (libraries seq time_utils))
+
+(executable
+ (name time_tabulate)
+ (modules time_tabulate)
+ (libraries seq time_utils))
+
+(executable
+ (name time_scan)
+ (modules time_scan)
+ (libraries seq time_utils))
+
+(executable
+ (name time_sort)
+ (modules time_sort)
+ (libraries quicksort seq time_utils))
+
+(executable
+ (name time_block_matrix)
+ (modules time_block_matrix)
+ (libraries matrix seq time_utils))
+
+(executable
+ (name time_seq_matrix)
+ (modules time_seq_matrix)
+ (libraries matrix seq time_utils))
+
+(executable
+ (name time_array_matrix)
+ (modules time_array_matrix)
+ (libraries matrix seq time_utils))
+
+(executable
+ (name time_index)
+ (modules time_index)
+ (libraries index seq time_utils))
+
+(executable
+ (name time_array_handler)
+ (modules time_array_handler)
+ (libraries seq time_utils))
 
 (install
  (section bin)
  (files
-  (time_matrix.exe as time_matrix)
   (time_sort.exe as time_sort)
   (time_reduce.exe as time_reduce)
   (time_map.exe as time_map)
   (time_tabulate.exe as time_tabulate)
   (time_scan.exe as time_scan)
-  (time_par_for.exe as time_par_for)
   (time_block_matrix.exe as time_block_matrix)
   (time_seq_matrix.exe as time_seq_matrix)
   (time_array_matrix.exe as time_array_matrix)
-  (time_index.exe as time_index)))
+  (time_index.exe as time_index)
+  (time_array_handler.exe as time_array_handler)))
