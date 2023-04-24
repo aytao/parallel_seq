@@ -4,7 +4,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 
-#define SAFE_BYTE -1
+#define SAFE_VAL -1
 
 /* [len] is a [value] representing number of words */
 CAMLprim value caml_make_uninitialized_vect(value len)
@@ -32,9 +32,8 @@ CAMLprim value caml_make_uninitialized_vect(value len)
       res = caml_alloc_shr(size, 0);
     }
 
-    // for (i = 0; i < size; i++)
-    //   Field(res, i) = init;
-    memset((void *)res, SAFE_BYTE, num_bytes);
+    for (i = 0; i < size; i++)
+      Field(res, i) = SAFE_VAL;
   }
   /* Give the GC a chance to run, and run memprof callbacks */
   caml_process_pending_actions();
