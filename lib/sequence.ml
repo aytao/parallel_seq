@@ -151,7 +151,7 @@ module ParallelArraySeq (P : Pool) : S = struct
     iter (fun v -> Printf.printf "%s, " (to_string v)) s;
     print_newline ()
 
-  let length (s : 'a t) : int = Array.length s
+  let length : 'a t -> int = Array.length
 
   let cons (x : 'a) (s : 'a t) : 'a t =
     let len = length s in
@@ -240,6 +240,7 @@ module ParallelArraySeq (P : Pool) : S = struct
       let subtree_size = prev_size / k in
       let rec collapse_sequentially (group_num : int) : unit =
         (* First group is already correct *)
+        (* TODO: Better names *)
         if group_num = 0 then ()
         else
           let offset = group_num * prev_size in
@@ -248,6 +249,7 @@ module ParallelArraySeq (P : Pool) : S = struct
           for i = 1 to last do
             let idx = offset + (i * subtree_size) in
             let prev_group_idx = round_down idx prev_size in
+            (* TODO: I think this is always just equal to offset? *)
             tree.(idx - 1) <- f tree.(prev_group_idx - 1) tree.(idx - 1)
           done
       in
@@ -306,12 +308,12 @@ module ParallelArraySeq (P : Pool) : S = struct
     arr
 
   let filter (pred : 'a -> bool) (s : 'a t) : 'a t =
-    let length = length s in
-    if length = 0 then empty ()
+    let len = length s in
+    if len = 0 then empty ()
     else
       let bit_vec = map (fun v -> if pred v then 1 else 0) s in
       let prefixes = scan ( + ) 0 bit_vec in
-      let filtered_length = nth prefixes (length - 1) in
+      let filtered_length = nth prefixes (len - 1) in
       let filtered : 'a array =
         Array_handler.get_uninitialized filtered_length
       in
@@ -319,7 +321,7 @@ module ParallelArraySeq (P : Pool) : S = struct
         let l = if idx = 0 then 0 else nth prefixes (idx - 1) in
         if nth prefixes idx > l then filtered.(l) <- nth s idx else ()
       in
-      parallel_for length body;
+      parallel_for len body;
       filtered
 end
 
