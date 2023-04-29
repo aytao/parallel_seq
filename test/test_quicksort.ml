@@ -1,13 +1,15 @@
 open Seq
 open Sequence
+open Sequence_provider
 open Quicksort
+module Quicksort = Quicksort (S)
 
 let n = 64000
 
 let test_quicksort n =
   let s =
     S.tabulate (fun _ -> Random.float Float.max_float) n
-    |> quicksort Float.compare
+    |> Quicksort.quicksort Float.compare
   in
   let check_less i =
     assert (Float.compare (S.nth s i) (S.nth s (i + 1)) <= 0);

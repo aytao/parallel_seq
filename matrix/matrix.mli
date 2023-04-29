@@ -1,6 +1,4 @@
 open Seq
-open Sequence
-module DictOfKeys : Map.S with type key = int * int
 
 module type MatrixElt = sig
   type t
@@ -15,8 +13,6 @@ module type MATRIX = sig
   type vect
   type matrix
 
-  val of_dok : int -> int -> elt DictOfKeys.t -> matrix
-  val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
   val of_2d_arr : elt array array -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
@@ -27,6 +23,5 @@ module type MATRIX = sig
 end
 
 module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t
-module SeqMatrix (E : MatrixElt) : MATRIX with type elt = E.t
-module CRSMatrix (E : MatrixElt) : MATRIX with type elt = E.t
-module BlockMatrix (E : MatrixElt) : MATRIX with type elt = E.t
+module SeqMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t
+module BlockMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t

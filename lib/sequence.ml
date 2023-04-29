@@ -190,32 +190,32 @@ module ParallelArraySeq (P : Pool) : S = struct
   (* Returns a calculated k-way fenwick tree, as well as the size of the greatest subtree in the structure *)
   let build_fenwick_tree (f : 'a -> 'a -> 'a) (b : 'a) (k : int) (s : 'a t) :
       'a array * int =
-    if k < 2 then failwith "cannot have k < 2"
-    else
-      let len = length s in
-      let tree = clone s in
-      let group_subtrees (subtree_size : int) : unit =
-        let rec group_sequentially (subtree_num : int) : unit =
-          let offset = subtree_num * subtree_size * k in
-          let acc = ref b in
-          let last = min k ((len - offset) / subtree_size) in
-          for i = 1 to last do
-            let idx = offset + (i * subtree_size) in
-            acc := f !acc tree.(idx - 1);
-            tree.(idx - 1) <- !acc
-          done
-        in
-        parallel_for (ceil_div len (subtree_size * k)) group_sequentially;
-        ()
+    assert (k >= 2);
+    (* cannot have k < 2 *)
+    let len = length s in
+    let tree = clone s in
+    let group_subtrees (subtree_size : int) : unit =
+      let rec group_sequentially (group_num : int) : unit =
+        let offset = group_num * subtree_size * k in
+        let acc = ref b in
+        let last = min k ((len - offset) / subtree_size) in
+        for i = 1 to last do
+          let idx = offset + (i * subtree_size) in
+          acc := f !acc tree.(idx - 1);
+          tree.(idx - 1) <- !acc
+        done
       in
-      let rec loop (prev_size : int) : int =
-        if prev_size > len then prev_size / k
-        else (
-          group_subtrees prev_size;
-          loop (prev_size * k))
-      in
-      let last_size = loop 1 in
-      (tree, last_size)
+      parallel_for (ceil_div len (subtree_size * k)) group_sequentially;
+      ()
+    in
+    let rec loop (prev_size : int) : int =
+      if prev_size > len then prev_size / k
+      else (
+        group_subtrees prev_size;
+        loop (prev_size * k))
+    in
+    let last_size = loop 1 in
+    (tree, last_size)
 
   let get_from_fenwick_tree (f : 'a -> 'a -> 'a) (b : 'a) (k : int)
       (tree : 'a array) (last_size : int) (i : int) : 'a =
@@ -235,25 +235,19 @@ module ParallelArraySeq (P : Pool) : S = struct
   let collapse_fenwick_tree (f : 'a -> 'a -> 'a) (b : 'a) (k : int)
       (tree : 'a array) (last_size : int) : 'a t =
     let len = Array.length tree in
-    let round_down idx d = d * (idx / d) in
     let collapse_layer (prev_size : int) : unit =
       let subtree_size = prev_size / k in
       let rec collapse_sequentially (group_num : int) : unit =
-        (* First group is already correct *)
-        (* TODO: Better names *)
-        if group_num = 0 then ()
-        else
-          let offset = group_num * prev_size in
-          let last = min (k - 1) ((len - offset) / subtree_size) in
-          (* No need to do first *)
-          for i = 1 to last do
-            let idx = offset + (i * subtree_size) in
-            let prev_group_idx = round_down idx prev_size in
-            (* TODO: I think this is always just equal to offset? *)
-            tree.(idx - 1) <- f tree.(prev_group_idx - 1) tree.(idx - 1)
-          done
+        let offset = (group_num + 1) * prev_size in
+        let last = min (k - 1) ((len - offset) / subtree_size) in
+        (* No need to do first *)
+        for i = 1 to last do
+          let idx = offset + (i * subtree_size) in
+          tree.(idx - 1) <- f tree.(offset - 1) tree.(idx - 1)
+        done
       in
-      parallel_for (ceil_div len prev_size) collapse_sequentially;
+      (* First group is already correct *)
+      parallel_for (ceil_div len prev_size - 1) collapse_sequentially;
       ()
     in
     let rec loop (tree : 'a array) (prev_size : int) : unit =
@@ -266,7 +260,7 @@ module ParallelArraySeq (P : Pool) : S = struct
     tree
 
   let get_fenwick_k (n : int) : int =
-    min (max 2 (n / num_domains)) Defines.sequential_cutoff
+    min (max 2 (n / num_domains)) Defaults.sequential_cutoff
 
   let fenwick_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
     match length s with
@@ -325,12 +319,13 @@ module ParallelArraySeq (P : Pool) : S = struct
       filtered
 end
 
-let m =
-  if Defines.force_sequential then (module ArraySeq : S)
-  else
-    let pool = Task.setup_pool ~num_domains:(Defines.num_domains - 1) () in
-    (module ParallelArraySeq (struct
-      let pool = pool
-    end) : S)
+type seq_type = Sequential | Parallel of int
 
-module S = (val m)
+let get_module (seq_type : seq_type) : (module S) =
+  match seq_type with
+  | Sequential -> (module ArraySeq : S)
+  | Parallel num_domains ->
+      let pool = Task.setup_pool ~num_domains:(num_domains - 1) () in
+      (module ParallelArraySeq (struct
+        let pool = pool
+      end) : S)

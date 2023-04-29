@@ -1,7 +1,7 @@
-(test ;Currently not used
- (name test_valid)
- (libraries seq)
- (modules test_valid))
+(library
+ (name sequence_provider)
+ (modules sequence_provider)
+ (libraries seq))
 
 (test
  (name test_array_handler)
@@ -15,30 +15,30 @@
 
 (test
  (name test_gc_harmony)
- (libraries seq)
+ (libraries seq sequence_provider)
  (modules test_gc_harmony))
 
 (test
  (name test_iter)
- (libraries seq)
+ (libraries seq sequence_provider)
  (modules test_iter))
 
 (test
  (name test_combine)
- (libraries seq)
+ (libraries seq sequence_provider)
  (modules test_combine))
 
 (test
  (name test_split_append_ops)
- (libraries seq)
+ (libraries seq sequence_provider)
  (modules test_split_append_ops))
 
 (test
  (name test_quicksort)
- (libraries seq quicksort)
+ (libraries seq sequence_provider quicksort)
  (modules test_quicksort))
 
 (test
  (name test_mat_mul)
- (libraries seq matrix)
+ (libraries seq sequence_provider matrix)
  (modules test_mat_mul))

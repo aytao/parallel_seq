@@ -1,9 +1,10 @@
 open Seq
 open Sequence
+open Sequence_provider
 
 type thing = Foo | Bar of int
 
-let n : int = (Defines.sequential_cutoff * Defines.num_domains) + 1
+let n : int = (Defaults.sequential_cutoff * Defaults.num_domains) + 1
 let weak_arr = Weak.create n
 
 let f i =

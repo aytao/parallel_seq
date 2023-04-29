@@ -1,6 +1,7 @@
 open Seq
 open Matrix
 open Printexc
+open Sequence_provider
 
 let m = 1000
 let n = 1500
@@ -23,8 +24,8 @@ module MatrixMul (M : MATRIX) = struct
     Array.init m (fun i -> Array.init n (fun j -> M.get i j result))
 end
 
-module BlockMul = MatrixMul (BlockMatrix (Int_Elt))
-module SeqMul = MatrixMul (SeqMatrix (Int_Elt))
+module BlockMul = MatrixMul (BlockMatrix (Int_Elt) (S))
+module SeqMul = MatrixMul (SeqMatrix (Int_Elt) (S))
 module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
 
 let get_random_int_arr_arr m n =

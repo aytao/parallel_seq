@@ -1,6 +1,13 @@
 open Seq
 open Sequence
-open S
+
+let seq_type =
+  if Defaults.force_sequential then Sequential
+  else Parallel Defaults.num_domains
+
+let m = Sequence.get_module seq_type
+
+open (val m : Sequence.S)
 
 let harmonic_sum (n : int) : float =
   let denominators = tabulate (fun x -> x + 1) n in

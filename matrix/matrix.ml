@@ -1,6 +1,4 @@
 open Seq
-open Sequence
-open Quicksort
 
 let compare_int_tuple ((row1, col1) : int * int) ((row2, col2) : int * int) =
   let cmp_r = compare row1 row2 in
@@ -27,8 +25,6 @@ module type MATRIX = sig
   type vect
   type matrix
 
-  val of_dok : int -> int -> elt DictOfKeys.t -> matrix
-  val of_elt_arr : ((int * int) * elt) array -> int -> int -> matrix
   val of_2d_arr : elt array array -> matrix
   val get : int -> int -> matrix -> elt
   val dimensions : matrix -> int * int
@@ -158,35 +154,13 @@ module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       Array.init m (fun i -> Array.init n (fun j -> body i j))
 end
 
-module SeqMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
+module SeqMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t =
+struct
   type elt = E.t
   type vect = elt S.t
   type matrix = elt S.t S.t
 
   let b = E.b
-
-  let of_dok m n map =
-    let _ = check_size_legal m n "SeqMatrix.of_map" in
-    S.tabulate
-      (fun i ->
-        S.tabulate
-          (fun j ->
-            if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b)
-          n)
-      m
-
-  let of_elt_arr (elt_arr : ((int * int) * elt) array) m n =
-    let elt_seq = sort_elt_seq quicksort (S.seq_of_array elt_arr) in
-    let get_val row col =
-      let cmp (tup1, _) (tup2, _) = compare_int_tuple tup1 tup2 in
-      let tup = ((row, col), b) in
-      let idx = bin_search S.nth elt_seq cmp tup 0 (S.length elt_seq) in
-      if idx < 0 then b
-      else
-        let _, elt = S.nth elt_seq idx in
-        elt
-    in
-    S.tabulate (fun i -> S.tabulate (fun j -> get_val i j) n) m
 
   let of_2d_arr (eaa : elt array array) =
     (* Check legal lengths, ensure all rows same length *)
@@ -248,88 +222,8 @@ module SeqMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       S.tabulate (fun r -> S.tabulate (body r) n) m
 end
 
-module CRSMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
-  type elt = E.t
-  type vect = elt S.t
-
-  type matrix = {
-    elts : elt S.t;
-    cols : int S.t;
-    row_ptrs : int S.t;
-    m : int;
-    n : int;
-  }
-
-  let b = E.b
-
-  let of_elt_seq (s : ((int * int) * elt) S.t) m n =
-    let s = sort_elt_seq quicksort s in
-    let elts = S.map (fun ((_, _), e) -> e) s in
-    let cols = S.map (fun ((_, c), _) -> c) s in
-
-    let inject ((r, _), _) = S.tabulate (fun i -> if i = r then 1 else 0) m in
-    let combine counts1 counts2 =
-      S.tabulate (fun i -> S.nth counts1 i + S.nth counts2 i) m
-    in
-    let zeros = S.tabulate (fun i -> 0) m in
-    let row_counts = S.map_reduce inject combine zeros s in
-    let row_ptrs = S.cons 0 (S.scan ( + ) 0 row_counts) in
-    { elts; cols; row_ptrs; m; n }
-
-  let of_elt_arr (elt_arr : ((int * int) * elt) array) m n =
-    of_elt_seq (S.seq_of_array elt_arr) m n
-
-  let of_dok m n map =
-    let _ = check_size_legal m n "CRSMatrix.of_map" in
-    let s = S.seq_of_array @@ Array.of_list @@ DictOfKeys.bindings map in
-    of_elt_seq s m n
-
-  let of_2d_arr (eaa : elt array array) = failwith "Unimplemented"
-
-  let get row col { elts; cols; row_ptrs; m; n } =
-    let _ = check_index row col m n "CRSMatrix.get" in
-    let row_start, row_end = (S.nth row_ptrs row, S.nth row_ptrs (row + 1)) in
-    let row_idx = bin_search S.nth cols Int.compare col row_start row_end in
-    if row_idx < 0 then b else S.nth elts (row_start + row_idx)
-
-  let dimensions mat = (mat.m, mat.n)
-
-  let transpose { elts; cols; row_ptrs; m; n } =
-    let repeat_row row =
-      let row_size = S.nth row_ptrs (row + 1) - S.nth row_ptrs row in
-      S.tabulate (fun _ -> row) row_size
-    in
-    let rows = S.flatten (S.tabulate repeat_row m) in
-    let zip i = ((S.nth cols i, S.nth rows i), S.nth elts i) in
-    let list = S.tabulate zip (S.length elts) in
-    of_elt_seq list n m
-
-  let vect_of_array = S.seq_of_array
-
-  let vect_mul { elts; cols; row_ptrs; m; n } vect =
-    let len = S.length vect in
-    if n != len then raise (Invalid_argument "CRSMatrix.vect_mul")
-    else
-      let row_body row =
-        let row_start, row_end =
-          (S.nth row_ptrs row, S.nth row_ptrs (row + 1))
-        in
-        S.tabulate
-          (fun i ->
-            let idx = i + row_start in
-            (S.nth cols idx, S.nth elts idx))
-          (row_end - row_start)
-      in
-      let row_tuple_seqs = S.tabulate row_body m in
-      let row_dot row_seq =
-        S.map_reduce (fun (c, e) -> E.mul e (S.nth vect c)) E.add b row_seq
-      in
-      S.map row_dot row_tuple_seqs
-
-  let matrix_mul mat1 mat2 = failwith "Unimplemented"
-end
-
-module BlockMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
+module BlockMatrix (E : MatrixElt) (S : Sequence.S) :
+  MATRIX with type elt = E.t = struct
   type elt = E.t
   type vect = elt S.t
   type matrix = elt S.t S.t
@@ -345,29 +239,6 @@ module BlockMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
   type submat_addend = Full of elt array array | Empty
 
   let b = E.b
-
-  let of_dok m n map =
-    let _ = check_size_legal m n "BlockMatrix.of_map" in
-    S.tabulate
-      (fun i ->
-        S.tabulate
-          (fun j ->
-            if DictOfKeys.mem (i, j) map then DictOfKeys.find (i, j) map else b)
-          n)
-      m
-
-  let of_elt_arr (elt_arr : ((int * int) * elt) array) m n =
-    let elt_seq = sort_elt_seq quicksort (S.seq_of_array elt_arr) in
-    let get_val row col =
-      let cmp (tup1, _) (tup2, _) = compare_int_tuple tup1 tup2 in
-      let tup = ((row, col), b) in
-      let idx = bin_search S.nth elt_seq cmp tup 0 (S.length elt_seq) in
-      if idx < 0 then b
-      else
-        let _, elt = S.nth elt_seq idx in
-        elt
-    in
-    S.tabulate (fun i -> S.tabulate (fun j -> get_val i j) n) m
 
   let of_2d_arr (eaa : elt array array) =
     (* Check legal lengths, ensure all rows same length *)
@@ -451,7 +322,7 @@ module BlockMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
     if p != p' then raise (Invalid_argument "BlockMatrix.matrix_mul")
     else
       let ceil_div num den = (num + den - 1) / den in
-      let submat_size = Defines.sequential_cutoff in
+      let submat_size = Defaults.sequential_cutoff in
       let num_secs i = ceil_div i submat_size in
       let m_secs = num_secs m in
       let p_secs = num_secs p in
