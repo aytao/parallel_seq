@@ -86,7 +86,7 @@ module ArraySeq : S = struct
       if i = n then ()
       else
         let y = f x u.(i) in
-        Array.set u i y;
+        u.(i) <- y;
         iter (i + 1) y
     in
     iter 0 b;

@@ -1,4 +1,3 @@
-#include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
@@ -6,6 +5,7 @@
 
 #define SAFE_VAL -1
 
+/* Adapted from the OCaml runtime Array.make */
 /* [len] is a [value] representing number of words */
 CAMLprim value caml_make_uninitialized_vect(value len)
 {

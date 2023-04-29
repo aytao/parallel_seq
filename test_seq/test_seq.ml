@@ -1,21 +1,14 @@
-(* Make a boxed int option and place it in the weak array and int array *)
-let f weak_a int_array i =
-  let int_opt_array : int option array = Obj.magic int_array in
-  let boxed_val = Some i in
-  Weak.set weak_a 0 (Some boxed_val);
-  int_opt_array.(0) <- boxed_val
+open Seq
+open Sequence
+open S
 
-let weak_arr : int option Weak.t = Weak.create 1
-let int_arr : int array = Array.make 1 (-1)
-let _ = f weak_arr int_arr 326;;
+let harmonic_sum (n : int) : float =
+  let denominators = tabulate (fun x -> x + 1) n in
+  let terms = map (fun x -> 1. /. float_of_int x) denominators in
+  reduce ( +. ) 0. terms
 
-(* The boxed int optional will not be garbage collected, since the int
- * array contains a reference to it. *)
-Gc.full_major ();;
-assert (Weak.check weak_arr 0);;
+let _ = Printf.printf "%f\n" (harmonic_sum 3)
 
-(* Overwrite the int array's reference to the int optional. Now, no references
- * to it exist, so it should be garbage collected. *)
-int_arr.(0) <- 0;;
-Gc.full_major ();;
-assert (not (Weak.check weak_arr 0))
+let get_array (n : int) : int array =
+  let singletons = tabulate (fun x -> [| x |]) n in
+  reduce Array.append [||] singletons

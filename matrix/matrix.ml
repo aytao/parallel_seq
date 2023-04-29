@@ -379,7 +379,7 @@ module BlockMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       | Base | Diff -> 0
       | Same i -> i
     in
-    let _ = check_size_legal m n "SeqMatrix.get" in
+    let _ = check_size_legal m n "BlockMatrix.of_2d_arr" in
     (* init *)
     S.tabulate
       (fun i -> S.tabulate (fun j -> eaa.(i).(j)) (Array.length eaa.(i)))
