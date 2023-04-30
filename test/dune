@@ -9,14 +9,13 @@
  (modules test_array_handler))
 
 (test
- (name test_cast_pointer)
- (libraries seq)
- (modules test_cast_pointer))
+ (name test_pointer)
+ (modules test_pointer))
 
 (test
- (name test_gc_harmony)
+ (name test_gc_scan)
  (libraries seq sequence_provider)
- (modules test_gc_harmony))
+ (modules test_gc_scan))
 
 (test
  (name test_iter)
@@ -29,9 +28,9 @@
  (modules test_combine))
 
 (test
- (name test_split_append_ops)
+ (name test_tabulate_and_friends)
  (libraries seq sequence_provider)
- (modules test_split_append_ops))
+ (modules test_tabulate_and_friends))
 
 (test
  (name test_quicksort)
@@ -42,3 +41,8 @@
  (name test_mat_mul)
  (libraries seq sequence_provider matrix)
  (modules test_mat_mul))
+
+(test
+ (name test_misc_ops)
+ (libraries seq sequence_provider)
+ (modules test_misc_ops))

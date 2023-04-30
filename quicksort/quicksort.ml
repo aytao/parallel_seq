@@ -36,9 +36,9 @@ module Quicksort (S : Sequence.S) = struct
     let gt = S.filter (fun x -> cmp x p > 0) s in
     (lt, eq, gt)
 
-  let rec quicksort (cmp : 'a cmp) (s : 'a S.t) : 'a S.t =
+  let rec sort (cmp : 'a cmp) (s : 'a S.t) : 'a S.t =
     if S.length s <= insertion_cutoff then insertion_sort cmp s
     else
       let lt, eq, gt = partition cmp s (get_median s) in
-      S.append (S.append (quicksort cmp lt) eq) (quicksort cmp gt)
+      S.append (S.append (sort cmp lt) eq) (sort cmp gt)
 end

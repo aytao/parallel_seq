@@ -23,24 +23,31 @@ let combine_intervals (i1 : interval) (i2 : interval) : interval =
         failwith "Invalid interval")
       else Interval (b1, e2)
 
-let test_reduce_ordering n : unit =
-  let interval = S.tabulate singleton n |> S.reduce combine_intervals Empty in
-  match interval with
-  | Empty -> assert (n = 0)
-  | Interval (b, e) -> assert (b = 0 && e = n)
-
-let test_scan_ordering n : unit =
-  let check_interval i interval : unit =
+module Test (S : Sequence.S) = struct
+  let test_reduce_ordering n : unit =
+    let interval = S.tabulate singleton n |> S.reduce combine_intervals Empty in
     match interval with
-    | Empty -> assert false
-    | Interval (b, e) -> assert (b = 0 && e = i + 1)
-  in
-  S.tabulate singleton n
-  |> S.scan combine_intervals Empty
-  |> S.iteri check_interval
+    | Empty -> assert (n = 0)
+    | Interval (b, e) -> assert (b = 0 && e = n)
 
-let _ = Printexc.record_backtrace true
-let _ = print_endline "Running reduce test"
-let _ = try test_reduce_ordering n with exn -> Printexc.print_backtrace stdout
-let _ = print_endline "Running scan test"
-let _ = test_scan_ordering n
+  let test_scan_ordering n : unit =
+    let check_interval i interval : unit =
+      match interval with
+      | Empty -> assert false
+      | Interval (b, e) -> assert (b = 0 && e = i + 1)
+    in
+    S.tabulate singleton n
+    |> S.scan combine_intervals Empty
+    |> S.iteri check_interval
+
+  let run_tests n : unit =
+    let _ = test_reduce_ordering n in
+    let _ = test_scan_ordering n in
+    ()
+end
+
+module ParallelTester = Test (ParallelS)
+module SequentialTester = Test (SequentialS)
+
+let _ = ParallelTester.run_tests n
+let _ = SequentialTester.run_tests n

@@ -7,6 +7,9 @@ let m = 1000
 let n = 1500
 let p = 200
 
+let get_random_int_arr_arr m n =
+  Array.init m (fun i -> Array.init n (fun _ -> Random.int 256))
+
 module Int_Elt = struct
   type t = int
 
@@ -24,31 +27,29 @@ module MatrixMul (M : MATRIX) = struct
     Array.init m (fun i -> Array.init n (fun j -> M.get i j result))
 end
 
-module BlockMul = MatrixMul (BlockMatrix (Int_Elt) (S))
-module SeqMul = MatrixMul (SeqMatrix (Int_Elt) (S))
-module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
+module Test (S : Sequence.S) = struct
+  module BlockMul = MatrixMul (BlockMatrix (Int_Elt) (S))
+  module SeqMul = MatrixMul (SeqMatrix (Int_Elt) (S))
+  module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
 
-let get_random_int_arr_arr m n =
-  Array.init m (fun i -> Array.init n (fun _ -> Random.int 256))
+  let test_mul () =
+    let equal m1 m2 =
+      Array.for_all2 (fun r1 r2 -> Array.for_all2 ( = ) r1 r2) m1 m2
+    in
+    let elts1 = get_random_int_arr_arr m n in
+    let elts2 = get_random_int_arr_arr n p in
+    let block_result = BlockMul.mul elts1 elts2 in
+    let seq_result = SeqMul.mul elts1 elts2 in
+    let array_result = ArrayMul.mul elts1 elts2 in
+    let _ = assert (equal block_result seq_result) in
+    let _ = assert (equal array_result block_result) in
+    ()
 
-let test_mul () =
-  let equal m1 m2 =
-    Array.for_all2 (fun r1 r2 -> Array.for_all2 ( = ) r1 r2) m1 m2
-  in
-  let elts1 = get_random_int_arr_arr m n in
-  let elts2 = get_random_int_arr_arr n p in
-  let block_result = BlockMul.mul elts1 elts2 in
-  let seq_result = SeqMul.mul elts1 elts2 in
-  let array_result = ArrayMul.mul elts1 elts2 in
-  assert (equal block_result seq_result);
-  assert (equal array_result block_result)
+  let run_tests () = test_mul ()
+end
 
-let _ = record_backtrace true
-let _ = print_endline "Running matrix multiplication test"
+module ParallelTester = Test (ParallelS)
+module SequentialTester = Test (SequentialS)
 
-let _ =
-  try test_mul ()
-  with e ->
-    print_endline (Printexc.to_string e);
-    print_backtrace stderr;
-    assert false
+let _ = ParallelTester.run_tests ()
+let _ = SequentialTester.run_tests ()
