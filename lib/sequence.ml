@@ -262,15 +262,13 @@ module ParallelArraySeq (P : Pool) : S = struct
   let get_fenwick_k (n : int) : int =
     min (max 2 (n / num_domains)) Defaults.sequential_cutoff
 
-  let fenwick_reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
+  let reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
     match length s with
     | 0 -> b
     | len ->
         let k = get_fenwick_k len in
         let tree, size = build_fenwick_tree g b k s in
         get_from_fenwick_tree g b k tree size (length s - 1)
-
-  let reduce = fenwick_reduce
 
   let map (f : 'a -> 'b) (s : 'a t) : 'b t =
     let body idx = f s.(idx) in
@@ -280,7 +278,7 @@ module ParallelArraySeq (P : Pool) : S = struct
       (s : 'a t) : 'b =
     map inject s |> reduce combine b
 
-  let fenwick_scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
+  let scan (f : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a t =
     match length s with
     | 0 -> empty ()
     | len ->
@@ -288,18 +286,18 @@ module ParallelArraySeq (P : Pool) : S = struct
         let tree, size = build_fenwick_tree f b k s in
         collapse_fenwick_tree f b k tree size
 
-  let scan = fenwick_scan
-
   let flatten (ss : 'a t t) : 'a t =
-    let lens = map (fun s -> length s) ss in
-    let total_len = reduce ( + ) 0 lens in
-    let starts = scan ( + ) 0 lens in
-    let arr : 'a array = Array_handler.get_uninitialized total_len in
-    parallel_for (length ss) (fun i ->
-        let start = starts.(i) in
-        let s = ss.(i) in
-        parallel_for (length s) (fun j -> arr.(start + j) <- s.(j)));
-    arr
+    if length ss = 0 then empty ()
+    else
+      let lens = map (fun s -> length s) ss in
+      let starts = scan ( + ) 0 lens in
+      let total_len = nth starts (length starts - 1) in
+      let arr : 'a array = Array_handler.get_uninitialized total_len in
+      parallel_for (length ss) (fun i ->
+          let start = if i = 0 then 0 else starts.(i - 1) in
+          let s = ss.(i) in
+          parallel_for (length s) (fun j -> arr.(start + j) <- s.(j)));
+      arr
 
   let filter (pred : 'a -> bool) (s : 'a t) : 'a t =
     let len = length s in
