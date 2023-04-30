@@ -5,22 +5,18 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github aytao/ParallelSequences))
 
-(authors "Author Name")
+(authors "Andrew Tao")
 
-(maintainers "Maintainer Name")
+(maintainers "Andrew Tao")
 
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(license LGPL-2.1-or-later)
 
 (package
  (name seq)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune)
- (tags
-  (topics "to describe" your project)))
-
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
+ (synopsis
+  "A shared-memory parallelism implementation of the parallel sequences abstraction.")
+ (depends
+  ocaml
+  (>= "5.0")))
