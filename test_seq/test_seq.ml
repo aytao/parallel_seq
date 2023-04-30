@@ -1,9 +1,12 @@
+open Domainslib
 open Seq
 open Sequence
 
 let seq_type =
   if Defaults.force_sequential then Sequential
-  else Parallel Defaults.num_domains
+  else
+    let pool = Task.setup_pool ~num_domains:Defaults.num_domains () in
+    Parallel pool
 
 let m = Sequence.get_module seq_type
 

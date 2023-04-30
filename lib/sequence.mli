@@ -1,5 +1,3 @@
-open Domainslib
-
 module type S = sig
   type 'a t
 
@@ -25,6 +23,6 @@ module type S = sig
   val filter : ('a -> bool) -> 'a t -> 'a t
 end
 
-type seq_type = Sequential | Parallel of int
+type seq_type = Sequential | Parallel of Domainslib.Task.pool
 
 val get_module : seq_type -> (module S)

@@ -317,13 +317,12 @@ module ParallelArraySeq (P : Pool) : S = struct
       filtered
 end
 
-type seq_type = Sequential | Parallel of int
+type seq_type = Sequential | Parallel of Task.pool
 
 let get_module (seq_type : seq_type) : (module S) =
   match seq_type with
   | Sequential -> (module ArraySeq : S)
-  | Parallel num_domains ->
-      let pool = Task.setup_pool ~num_domains:(num_domains - 1) () in
+  | Parallel pool ->
       (module ParallelArraySeq (struct
         let pool = pool
       end) : S)

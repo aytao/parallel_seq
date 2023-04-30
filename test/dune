@@ -1,7 +1,7 @@
 (library
  (name sequence_provider)
  (modules sequence_provider)
- (libraries seq))
+ (libraries seq domainslib))
 
 (test
  (name test_array_handler)
