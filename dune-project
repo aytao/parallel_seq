@@ -11,12 +11,12 @@
 
 (maintainers "Andrew Tao")
 
-(license LGPL-2.1-or-later)
+(license "ISC")
 
 (package
  (name seq)
  (synopsis
   "A shared-memory parallelism implementation of the parallel sequences abstraction.")
  (depends
-  ocaml
-  (>= "5.0")))
+  (ocaml
+   (>= "5.0"))))
