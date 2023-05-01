@@ -1,6 +1,4 @@
-import os
 import random
-import sys
 from sys import argv, exit
 
 
