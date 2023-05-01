@@ -31,8 +31,5 @@ _opam/
 # ocamlformat
 .ocamlformat
 
-# vscode
-.vscode/
-
-# indexing
+# index data
 index_data/*
