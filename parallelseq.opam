@@ -4,13 +4,13 @@ synopsis:
   "A shared-memory parallelism implementation of the parallel sequences abstraction."
 maintainer: ["Andrew Tao"]
 authors: ["Andrew Tao"]
-license: "ISC"
+license: "LGPL-2.1-or-later"
 homepage: "https://github.com/aytao/ParallelSequences"
 bug-reports: "https://github.com/aytao/ParallelSequences/issues"
 depends: [
   "dune" {>= "3.6"}
   "ocaml" {>= "5.0"}
-  "domainslib" {= "0.3.0"}
+  "domainslib" {>= "0.5.0"}
   "odoc" {with-doc}
 ]
 build: [

@@ -11,7 +11,7 @@
 
 (maintainers "Andrew Tao")
 
-(license "ISC")
+(license "LGPL-2.1-or-later")
 
 (package
  (name parallelseq)
