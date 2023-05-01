@@ -94,7 +94,7 @@ module ArraySeq : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then raise (Invalid_argument "ArraySeq.zip")
+    if len1 != len2 then raise (Invalid_argument "Parallelseq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split s i = (Array.sub s 0 i, Array.sub s i (Array.length s - i))
@@ -150,8 +150,7 @@ module ParallelArraySeq (P : Pool) : S = struct
 
   let tabulate (f : int -> 'a) (n : int) : 'a t =
     if n = 0 then empty ()
-    else if n < 0 then
-      raise (Invalid_argument "Cannot make sequence of negative length")
+    else if n < 0 then raise (Invalid_argument "Parallelseq.tabulate")
     else
       let arr : 'a array = Array_handler.get_uninitialized n in
       parallel_for n (fun i -> arr.(i) <- f i);
@@ -191,13 +190,12 @@ module ParallelArraySeq (P : Pool) : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then
-      raise (Invalid_argument "Sequences are different lengths")
+    if len1 != len2 then raise (Invalid_argument "Parallelseq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split (s : 'a t) (i : int) : 'a t * 'a t =
     let len = length s in
-    if i < 0 || i > len then raise (Invalid_argument "i is outside of bounds")
+    if i < 0 || i > len then raise (Invalid_argument "Parallelseq.split")
     else
       let l = Array_handler.get_uninitialized i in
       let r = Array_handler.get_uninitialized (len - i) in
