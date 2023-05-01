@@ -1,9 +1,7 @@
 open Seq
-open Sequence
 open Sequence_provider
 
-(* let n : int = (Defaults.sequential_cutoff * Defaults.num_domains) + 1 *)
-let n = 20
+let n : int = (Defaults.sequential_cutoff * Defaults.num_domains) + 1
 let num_trials : int = 1_000
 
 module Test (S : Sequence.S) = struct

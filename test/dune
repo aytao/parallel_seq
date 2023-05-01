@@ -46,3 +46,8 @@
  (name test_misc_ops)
  (libraries seq sequence_provider)
  (modules test_misc_ops))
+
+(test
+ (name test_basic_arr_ops)
+ (libraries seq sequence_provider)
+ (modules test_basic_arr_ops))
