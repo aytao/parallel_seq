@@ -7,7 +7,6 @@ let f wa int_array i =
   let bar_repr = Obj.repr w in
   Obj.set_field na_repr 0 bar_repr
 
-let _ = print_endline "Running cast pointer test"
 let weak_arr : thing Weak.t = Weak.create 1
 let int_arr : int array = [| 0 |]
 let _ = f weak_arr int_arr 10;;

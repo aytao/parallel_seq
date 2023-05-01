@@ -103,14 +103,15 @@ module Indexer (S : Sequence.S) = struct
     let ceil_div num den = (num + den - 1) / den in
     let docs_file = open_in_bin docs_filename in
     let file_len = in_channel_length docs_file in
-    let chunk_size = ceil_div file_len Defaults.num_domains in
+    let num_chunks = Defaults.num_domains_total in
+    let chunk_size = ceil_div file_len num_chunks in
     let () = close_in_noerr docs_file in
     S.tabulate
       (fun i ->
         let chunk_start = i * chunk_size in
         let chunk_end = min ((i + 1) * chunk_size) file_len in
         process docs_filename chunk_start chunk_end)
-      Defaults.num_domains
+      num_chunks
     |> S.reduce combine_indexes DMap.empty
 end
 

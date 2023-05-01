@@ -2,7 +2,7 @@ open Parallelseq
 open Sequence
 open Sequence_provider
 
-let n : int = (Defaults.sequential_cutoff * Defaults.num_domains) + 1
+let n : int = (Defaults.sequential_cutoff * Defaults.num_domains_total) + 1
 let weak_arr = Weak.create n
 
 let f i =

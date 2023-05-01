@@ -1,7 +1,7 @@
 open Parallelseq
 open Sequence_provider
 
-let n : int = Defaults.sequential_cutoff * Defaults.num_domains * 10
+let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total * 10
 
 let f (counter : int ref) (v : int) : unit =
   assert (v = !counter);

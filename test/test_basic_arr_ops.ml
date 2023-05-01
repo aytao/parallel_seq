@@ -1,7 +1,7 @@
 open Parallelseq
 open Sequence_provider
 
-let n : int = Defaults.sequential_cutoff * Defaults.num_domains
+let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total
 
 module Test (S : Sequence.S) = struct
   let test_length n =

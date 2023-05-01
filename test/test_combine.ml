@@ -2,7 +2,7 @@ open Parallelseq
 open Sequence
 open Sequence_provider
 
-let n : int = Defaults.sequential_cutoff * Defaults.num_domains * 10
+let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total * 10
 
 type interval = Empty | Interval of (int * int)
 

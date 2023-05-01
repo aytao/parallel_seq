@@ -19,4 +19,6 @@
   "A shared-memory parallelism implementation of the parallel sequences abstraction.")
  (depends
   (ocaml
-   (>= "5.0"))))
+   (>= "5.0"))
+  (domainslib
+   (= "0.5.0"))))

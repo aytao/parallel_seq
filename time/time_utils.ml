@@ -3,7 +3,7 @@ open Parallelseq
 open Sequence
 open Arg
 
-let domains_arg = ref Defaults.num_domains
+let domains_arg = ref Defaults.num_domains_total
 let cutoff_arg = ref Defaults.sequential_cutoff
 let force_sequential_arg = ref false
 
@@ -24,7 +24,7 @@ else if !cutoff_arg <= 0 then failwith "Sequential cutoff must be positive"
 let seq_type =
   if !force_sequential_arg then Sequential
   else
-    let pool = Task.setup_pool ~num_domains:!domains_arg () in
+    let pool = Task.setup_pool ~num_domains:(!domains_arg - 1) () in
     Parallel (pool, !cutoff_arg)
 
 let m = Sequence.get_module seq_type
