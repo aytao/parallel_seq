@@ -12,7 +12,7 @@ def main():
 
   command = "dune exec -- %s" % test_name
 
-  print("Running '%s' sequentially..." % test_name, file=sys.stderr, end="")
+  print("Running '%s' sequentially..." % test_name, file=stderr, end="")
   stderr.flush()
 
   os.system(command + " -f")
