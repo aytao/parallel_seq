@@ -1,12 +1,31 @@
 open Domainslib
 open Seq
 open Sequence
+open Arg
+
+let domains_arg = ref Defaults.num_domains
+let cutoff_arg = ref Defaults.sequential_cutoff
+let force_sequential_arg = ref false
+
+let speclist =
+  [
+    ( "-num_domains",
+      Arg.Set_int domains_arg,
+      "Manually set the number of domains used" );
+    ("-s", Arg.Set_int cutoff_arg, "Manually adjust the sequential cutoff");
+    ("-f", Arg.Set force_sequential_arg, "Force sequencial implementation");
+  ]
+
+let _ = Arg.parse speclist (fun _ -> ()) "[num_domains] [s]";;
+
+if !domains_arg <= 0 then failwith "Must have at least one domain"
+else if !cutoff_arg <= 0 then failwith "Sequential cutoff must be positive"
 
 let seq_type =
-  if Defaults.force_sequential then Sequential
+  if !force_sequential_arg then Sequential
   else
-    let pool = Task.setup_pool ~num_domains:Defaults.num_domains () in
-    Parallel pool
+    let pool = Task.setup_pool ~num_domains:!domains_arg () in
+    Parallel (pool, !cutoff_arg)
 
 let m = Sequence.get_module seq_type
 

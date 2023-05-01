@@ -2,6 +2,7 @@ open Domainslib
 
 module type Pool = sig
   val pool : Task.pool
+  val cutoff : int
 end
 
 module type S = sig
@@ -317,12 +318,13 @@ module ParallelArraySeq (P : Pool) : S = struct
       filtered
 end
 
-type seq_type = Sequential | Parallel of Task.pool
+type seq_type = Sequential | Parallel of (Task.pool * int)
 
 let get_module (seq_type : seq_type) : (module S) =
   match seq_type with
   | Sequential -> (module ArraySeq : S)
-  | Parallel pool ->
+  | Parallel (pool, cutoff) ->
       (module ParallelArraySeq (struct
         let pool = pool
+        let cutoff = cutoff
       end) : S)

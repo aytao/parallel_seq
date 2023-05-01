@@ -23,6 +23,6 @@ module type S = sig
   val filter : ('a -> bool) -> 'a t -> 'a t
 end
 
-type seq_type = Sequential | Parallel of Domainslib.Task.pool
+type seq_type = Sequential | Parallel of (Domainslib.Task.pool * int)
 
 val get_module : seq_type -> (module S)
