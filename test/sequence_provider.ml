@@ -1,5 +1,5 @@
 open Domainslib
-open Seq
+open Parallelseq
 open Sequence
 
 let sequential_m = Sequence.get_module Sequential

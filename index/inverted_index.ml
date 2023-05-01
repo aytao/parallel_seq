@@ -1,4 +1,4 @@
-open Seq
+open Parallelseq
 open Sequence
 
 type doc_id = int

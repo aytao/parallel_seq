@@ -1,6 +1,6 @@
 (library
- (public_name seq)
- (name seq)
+ (public_name parallelseq)
+ (name parallelseq)
  (foreign_stubs
   (language c)
   (names array_handler))

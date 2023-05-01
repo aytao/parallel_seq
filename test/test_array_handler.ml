@@ -1,4 +1,4 @@
-open Seq
+open Parallelseq
 open Array_handler
 
 let n = 10_000_000

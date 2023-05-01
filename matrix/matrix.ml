@@ -1,4 +1,4 @@
-open Seq
+open Parallelseq
 
 module type MatrixElt = sig
   type t

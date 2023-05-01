@@ -1,4 +1,4 @@
-open Seq
+open Parallelseq
 open Matrix
 open Time_utils
 

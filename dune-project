@@ -1,6 +1,6 @@
 (lang dune 3.6)
 
-(name seq)
+(name parallelseq)
 
 (generate_opam_files true)
 
@@ -14,7 +14,7 @@
 (license "ISC")
 
 (package
- (name seq)
+ (name parallelseq)
  (synopsis
   "A shared-memory parallelism implementation of the parallel sequences abstraction.")
  (depends

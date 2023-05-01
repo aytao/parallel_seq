@@ -1,11 +1,11 @@
 (library
  (name sequence_provider)
  (modules sequence_provider)
- (libraries seq domainslib))
+ (libraries parallelseq domainslib))
 
 (test
  (name test_array_handler)
- (libraries seq)
+ (libraries parallelseq)
  (modules test_array_handler))
 
 (test
@@ -14,40 +14,35 @@
 
 (test
  (name test_gc_scan)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_gc_scan))
 
 (test
  (name test_iter)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_iter))
 
 (test
  (name test_combine)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_combine))
 
 (test
  (name test_tabulate_and_friends)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_tabulate_and_friends))
 
 (test
- (name test_quicksort)
- (libraries seq sequence_provider quicksort)
- (modules test_quicksort))
-
-(test
  (name test_mat_mul)
- (libraries seq sequence_provider matrix)
+ (libraries parallelseq sequence_provider matrix)
  (modules test_mat_mul))
 
 (test
  (name test_misc_ops)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_misc_ops))
 
 (test
  (name test_basic_arr_ops)
- (libraries seq sequence_provider)
+ (libraries parallelseq sequence_provider)
  (modules test_basic_arr_ops))

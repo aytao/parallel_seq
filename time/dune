@@ -1,22 +1,22 @@
 (library
  (name time_utils)
  (modules time_utils)
- (libraries seq unix))
+ (libraries parallelseq unix))
 
 (executable
  (name time_block_matrix)
  (modules time_block_matrix)
- (libraries matrix seq time_utils))
+ (libraries matrix parallelseq time_utils))
 
 (executable
  (name time_index)
  (modules time_index)
- (libraries index seq time_utils))
+ (libraries index parallelseq time_utils))
 
 (executable
  (name time_array_handler)
  (modules time_array_handler)
- (libraries seq time_utils))
+ (libraries parallelseq time_utils))
 
 (install
  (section bin)
