@@ -1,15 +1,5 @@
 open Seq
 
-let compare_int_tuple ((row1, col1) : int * int) ((row2, col2) : int * int) =
-  let cmp_r = compare row1 row2 in
-  if cmp_r = 0 then compare col1 col2 else cmp_r
-
-module IntTuple : Map.OrderedType with type t = int * int = struct
-  type t = int * int
-
-  let compare = compare_int_tuple
-end
-
 module type MatrixElt = sig
   type t
 
@@ -17,8 +7,6 @@ module type MatrixElt = sig
   val add : t -> t -> t
   val mul : t -> t -> t
 end
-
-module DictOfKeys = Map.Make (IntTuple)
 
 module type MATRIX = sig
   type elt
@@ -52,47 +40,12 @@ let bin_search nth s compare i lo hi =
   in
   helper lo hi
 
-let sort_elt_seq sort elt_seq =
-  let cmp (tup1, _) (tup2, _) = compare_int_tuple tup1 tup2 in
-  sort cmp elt_seq
-
-type row_len = Base | Same of int | Diff
-
-let combine_row_len al1 al2 =
-  match (al1, al2) with
-  | Diff, _ | _, Diff -> Diff
-  | Base, _ -> al2
-  | _, Base -> al1
-  | Same i, Same j -> if i = j then Same i else Diff
-
 module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
   type elt = E.t
   type vect = elt array
   type matrix = elt array array
 
   let b = E.b
-
-  let of_dok m n map =
-    let _ = check_size_legal m n "ArrayMatrix.of_map" in
-    let mat = Array.init m (fun i -> Array.make n b) in
-    let update_matrix k v =
-      let row, col = k in
-      let _ = check_index row col m n "ArrayMatrix.of_map" in
-      mat.(row).(col) <- v
-    in
-    DictOfKeys.iter update_matrix map;
-    mat
-
-  let of_elt_arr (elt_arr : ((int * int) * elt) array) m n =
-    let _ = check_size_legal m n "ArrayMatrix.of_map" in
-    let mat = Array.init m (fun i -> Array.make n b) in
-    let update_matrix elt =
-      let (row, col), v = elt in
-      let _ = check_index row col m n "ArrayMatrix.of_map" in
-      mat.(row).(col) <- v
-    in
-    Array.iter update_matrix elt_arr;
-    mat
 
   let of_2d_arr (eaa : elt array array) =
     (* Check legal lengths, ensure all rows same length *)
@@ -130,7 +83,7 @@ module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       (Array.length mat.(0))
       (fun i -> Array.init (Array.length mat) (fun j -> mat.(j).(i)))
 
-  let vect_of_array arr = Array.copy arr
+  let vect_of_array = Array.copy
 
   let vect_mul mat vect =
     let m, n = dimensions mat in
@@ -154,74 +107,6 @@ module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       Array.init m (fun i -> Array.init n (fun j -> body i j))
 end
 
-module SeqMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t =
-struct
-  type elt = E.t
-  type vect = elt S.t
-  type matrix = elt S.t S.t
-
-  let b = E.b
-
-  let of_2d_arr (eaa : elt array array) =
-    (* Check legal lengths, ensure all rows same length *)
-    let m = Array.length eaa in
-    let n =
-      S.tabulate (fun i -> Same (Array.length eaa.(i))) m
-      |> S.reduce combine_row_len Base
-      |> function
-      | Base | Diff -> 0
-      | Same i -> i
-    in
-    let _ = check_size_legal m n "SeqMatrix.get" in
-    (* init *)
-    S.tabulate
-      (fun i -> S.tabulate (fun j -> eaa.(i).(j)) (Array.length eaa.(i)))
-      (Array.length eaa)
-
-  let get row col mat =
-    let _ =
-      check_index row col (S.length mat)
-        (S.length (S.nth mat 0))
-        "SeqMatrix.get"
-    in
-    S.nth (S.nth mat row) col
-
-  let dimensions mat = (S.length mat, S.length (S.nth mat 0))
-
-  let dot v1 v2 =
-    assert (S.length v1 = S.length v2);
-    S.tabulate (fun i -> E.mul (S.nth v1 i) (S.nth v2 i)) (S.length v1)
-    |> S.reduce E.add b
-
-  let transpose mat =
-    S.tabulate
-      (fun i -> S.tabulate (fun j -> S.nth (S.nth mat j) i) (S.length mat))
-      (S.length (S.nth mat 0))
-
-  let vect_of_array = S.seq_of_array
-
-  let vect_mul mat vect =
-    let m, n = dimensions mat in
-    let len = S.length vect in
-    if n != len then raise (Invalid_argument "SeqMatrix.vect_mul")
-    else S.tabulate (fun i -> dot (S.nth mat i) vect) (S.length mat)
-
-  let matrix_mul mat1 mat2 =
-    let m, p = dimensions mat1 in
-    let p', n = dimensions mat2 in
-    if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul")
-    else
-      let body r c =
-        let acc = ref b in
-        let m1_r = S.nth mat1 r in
-        for i = 0 to p - 1 do
-          acc := E.add !acc (E.mul (S.nth m1_r i) (S.nth (S.nth mat2 i) c))
-        done;
-        !acc
-      in
-      S.tabulate (fun r -> S.tabulate (body r) n) m
-end
-
 module BlockMatrix (E : MatrixElt) (S : Sequence.S) :
   MATRIX with type elt = E.t = struct
   type elt = E.t
@@ -239,6 +124,15 @@ module BlockMatrix (E : MatrixElt) (S : Sequence.S) :
   type submat_addend = Full of elt array array | Empty
 
   let b = E.b
+
+  type row_len = Base | Same of int | Diff
+
+  let combine_row_len al1 al2 =
+    match (al1, al2) with
+    | Diff, _ | _, Diff -> Diff
+    | Base, _ -> al2
+    | _, Base -> al1
+    | Same i, Same j -> if i = j then Same i else Diff
 
   let of_2d_arr (eaa : elt array array) =
     (* Check legal lengths, ensure all rows same length *)

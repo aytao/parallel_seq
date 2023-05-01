@@ -29,7 +29,6 @@ end
 
 module Test (S : Sequence.S) = struct
   module BlockMul = MatrixMul (BlockMatrix (Int_Elt) (S))
-  module SeqMul = MatrixMul (SeqMatrix (Int_Elt) (S))
   module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
 
   let test_mul () =
@@ -39,9 +38,7 @@ module Test (S : Sequence.S) = struct
     let elts1 = get_random_int_arr_arr m n in
     let elts2 = get_random_int_arr_arr n p in
     let block_result = BlockMul.mul elts1 elts2 in
-    let seq_result = SeqMul.mul elts1 elts2 in
     let array_result = ArrayMul.mul elts1 elts2 in
-    let _ = assert (equal block_result seq_result) in
     let _ = assert (equal array_result block_result) in
     ()
 

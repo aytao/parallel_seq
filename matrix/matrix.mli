@@ -23,5 +23,4 @@ module type MATRIX = sig
 end
 
 module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t
-module SeqMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t
 module BlockMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t
