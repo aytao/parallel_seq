@@ -1,5 +1,4 @@
 open Parallelseq
-open Sequence
 open Array_handler
 
 let n = 1000000

@@ -1,5 +1,4 @@
 open Parallelseq
-open Sequence
 open Sequence_provider
 
 let n : int = (Defaults.sequential_cutoff * Defaults.num_domains_total) + 1
