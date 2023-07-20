@@ -11,6 +11,11 @@ let sequential _seq_mod ?n () =
       done)
     ()
 
+let copy _seq_mod ?n () =
+  let n = Option.value ~default:100000 n in
+  let arr = Array.init n (fun x -> x) in
+  Time_test.time (fun () -> Array.copy arr |> ignore) ()
+
 let parallel _seq_mod ?n () =
   let n = Option.value ~default:100000 n in
   let pool =
