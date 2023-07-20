@@ -1,0 +1,3 @@
+(library
+ (name array_init)
+ (libraries parallelseq time_test domainslib))
