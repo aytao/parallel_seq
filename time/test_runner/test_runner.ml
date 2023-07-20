@@ -2,6 +2,7 @@ let tests : (string * Time_test.t) list =
   [
     ("array_sequential", Array_init.sequential);
     ("array_parallel", Array_init.parallel);
+    ("array_copy", Array_init.copy);
   ]
 
 let run seq_mod test_name ?n () =
