@@ -1,0 +1,3 @@
+(library
+ (name test_runner)
+ (libraries parallelseq unix time_test array_init))
