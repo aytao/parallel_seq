@@ -28,7 +28,10 @@ else if !cutoff_arg <= 0 then failwith "Sequential cutoff must be positive"
 let seq_type =
   if !force_sequential_arg then Sequential
   else
-    let pool = Task.setup_pool ~num_domains:(!domains_arg - 1) () in
+    let pool =
+      Task.setup_pool ~name:"parallel_seq_pool" ~num_domains:(!domains_arg - 1)
+        ()
+    in
     Parallel (pool, !cutoff_arg)
 
 let m = Sequence.get_module seq_type

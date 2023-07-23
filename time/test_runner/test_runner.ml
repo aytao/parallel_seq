@@ -1,8 +1,9 @@
 let tests : (string * Time_test.t) list =
   [
-    ("array_sequential", Array_init.sequential);
-    ("array_parallel", Array_init.parallel);
-    ("array_copy", Array_init.copy);
+    ("scan_sequential", Time_scan.sequential);
+    ("scan_domainslib", Time_scan.domainslib);
+    ("array_copy", Time_scan.copy);
+    ("scan_parallel_seq", Time_scan.parallel_seq);
   ]
 
 let run seq_mod test_name ?n () =
