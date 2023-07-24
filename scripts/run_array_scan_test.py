@@ -13,6 +13,7 @@ def main():
 
   command_fmt = "dune exec -- %s -num_domains %d"
   print(repeats)
+  stdout.flush()
   for i in range(1, max_num_domains + 1):
     print("Running '%s' with %d domain(s)..." %
           (time_name, i), file=stderr, end="")
