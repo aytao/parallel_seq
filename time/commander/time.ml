@@ -34,12 +34,8 @@ let seq_type =
     in
     Parallel (pool, !cutoff_arg)
 
-let m = Sequence.get_module seq_type
-
-module S = (val m : Sequence.S)
-
 let n = if !n_arg < 0 then None else Some !n_arg
 
 let _ =
-  Test_runner.run (module S) !test_name ?n () |> print_float;
+  Test_runner.run !test_name (seq_type, n) |> print_float;
   print_newline ()
