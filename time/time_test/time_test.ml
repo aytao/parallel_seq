@@ -1,4 +1,5 @@
-type t = (module Parallelseq.Sequence.S) -> ?n:int -> unit -> float
+type config = Parallelseq.Sequence.seq_type * int option
+type t = config -> float
 
 let time (f : 'a -> 'b) (x : 'a) : float =
   let t = Unix.gettimeofday () in

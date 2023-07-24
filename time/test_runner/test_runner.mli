@@ -1,1 +1,1 @@
-val run : (module Parallelseq.Sequence.S) -> string -> ?n:int -> unit -> float
+val run : string -> Time_test.config -> float

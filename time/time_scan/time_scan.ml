@@ -2,7 +2,7 @@ let ensure_no_pool test_name =
   if Domainslib.Task.lookup_pool "parallel_seq_pool" |> Option.is_some then
     failwith ("Test " ^ test_name ^ " must be called with [-f]")
 
-let sequential _seq_mod ?n () =
+let sequential (_seq_type, n) =
   ensure_no_pool "scan_sequential";
   let n = Option.value ~default:100000 n in
   let arr = Array.init n (fun x -> x) in
@@ -14,7 +14,7 @@ let sequential _seq_mod ?n () =
       done)
     ()
 
-let copy _seq_mod ?n () =
+let copy (_seq_type, n) =
   ensure_no_pool "array_copy";
   let n = Option.value ~default:100000 n in
   let arr = Array.init n (fun x -> x) in
@@ -22,7 +22,7 @@ let copy _seq_mod ?n () =
 
 module Int_map = Map.Make (Int)
 
-let domainslib _seq_mod ?n () =
+let domainslib (_seq_type, n) =
   ensure_no_pool "scan_domainslib";
   let n = Option.value ~default:100000 n in
   let pool =
@@ -37,7 +37,8 @@ let domainslib _seq_mod ?n () =
           Domainslib.Task.parallel_scan pool ( + ) arr |> ignore))
     ()
 
-let parallel_seq seq_mod ?n () =
+let parallel_seq (seq_type, n) =
+  let seq_mod = Parallelseq.Sequence.get_module seq_type in
   let open (val seq_mod : Parallelseq.Sequence.S) in
   let n = Option.value ~default:100000 n in
   let s = tabulate (fun x -> Int_map.singleton x x) n in
