@@ -30,14 +30,11 @@ let domainslib _seq_mod ?n () =
       ~num_domains:(Parallelseq.Defaults.num_domains_total - 1)
       ()
   in
-  let arr = Array.init n (fun x -> Int_map.singleton x x) in
+  let arr = Array.init n (fun x -> x) in
   Time_test.time
     (fun () ->
       Domainslib.Task.run pool (fun () ->
-          Domainslib.Task.parallel_scan pool
-            (Int_map.union (fun x y z -> Some x))
-            arr
-          |> ignore))
+          Domainslib.Task.parallel_scan pool ( + ) arr |> ignore))
     ()
 
 let parallel_seq seq_mod ?n () =
