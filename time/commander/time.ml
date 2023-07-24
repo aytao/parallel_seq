@@ -29,8 +29,8 @@ let seq_type =
   if !force_sequential_arg then Sequential
   else
     let pool =
-      Task.setup_pool ~name:"parallel_seq_pool" ~num_domains:(!domains_arg - 1)
-        ()
+      Task.setup_pool ~name:Time_test.time_test_pool_name
+        ~num_domains:(!domains_arg - 1) ()
     in
     Parallel (pool, !cutoff_arg)
 
