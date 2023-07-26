@@ -2,8 +2,8 @@ let tests : (string * Time_test.t) list =
   [
     ("scan_sequential", Time_scan.sequential);
     ("scan_domainslib", Time_scan.domainslib);
-    ("array_copy", Time_scan.copy);
-    ("scan_parallel_seq", Time_scan.parallel_seq);
+    ("array_copy", Time_scan.array_copy);
+    ("scan_in_place", Time_scan.in_place);
   ]
 
 let run test_name config =

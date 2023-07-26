@@ -19,7 +19,7 @@ let sequential (_seq_type, n) =
       done)
     ()
 
-let copy (_seq_type, n) =
+let array_copy (_seq_type, n) =
   ensure_no_pool "array_copy";
   let n = Option.value ~default:100000 n in
   let arr = Array.init n (fun x -> x) in
@@ -37,12 +37,13 @@ let domainslib (_seq_type, n) =
           Domainslib.Task.parallel_scan pool ( + ) arr |> ignore))
     ()
 
-let parallel_seq (seq_type, n) =
-  let seq_mod = Parallelseq.Sequence.get_module seq_type in
-  let open (val seq_mod : Parallelseq.Sequence.S) in
-  let n = Option.value ~default:100000 n in
-  let s = tabulate (fun x -> Int_map.singleton x x) n in
+let in_place (_seq_type, n) =
+  let pool = get_pool "scan_in_place" in
+  let num_domains = Domainslib.Task.get_num_domains pool in
+  let n = Option.value ~default:1000000000 n in
+  let arr = Array.init n (fun x -> x) in
   Time_test.time
     (fun () ->
-      scan (Int_map.union (fun x y z -> Some x)) Int_map.empty s |> ignore)
+      Domainslib.Task.run pool (fun () ->
+          Mutating_scan.parallel_scan pool num_domains ( + ) arr |> ignore))
     ()
