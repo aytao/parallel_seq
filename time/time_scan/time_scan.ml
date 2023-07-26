@@ -47,3 +47,40 @@ let in_place (_seq_type, n) =
       Domainslib.Task.run pool (fun () ->
           Mutating_scan.parallel_scan pool num_domains ( + ) arr |> ignore))
     ()
+
+type interval = Empty | Interval of (int * int)
+
+let string_of_interval (interval : interval) : string =
+  match interval with
+  | Empty -> "empty"
+  | Interval (b, e) -> Printf.sprintf "(%d, %d)" b e
+
+let singleton (i : int) : interval = Interval (i, i + 1)
+
+let combine_intervals (i1 : interval) (i2 : interval) : interval =
+  match (i1, i2) with
+  | Empty, _ -> i2
+  | _, Empty -> i1
+  | Interval (b1, e1), Interval (b2, e2) ->
+      if e1 != b2 then (
+        Printf.eprintf "Intervals: (%d, %d), (%d, %d)\n" b1 e1 b2 e2;
+        failwith "Invalid interval")
+      else Interval (b1, e2)
+
+let test_mutating_scan (_seq_type, n) =
+  let check_interval i interval =
+    match interval with
+    | Empty -> assert false
+    | Interval (b, e) -> assert (b = 0 && e = i + 1)
+  in
+  let pool = get_pool "test_mutating_scan" in
+  let num_domains = Domainslib.Task.get_num_domains pool in
+  let n = Option.value ~default:1000000000 n in
+  let arr = Array.init n singleton in
+  Time_test.time
+    (fun () ->
+      Domainslib.Task.run pool (fun () ->
+          Mutating_scan.parallel_scan pool num_domains combine_intervals arr
+          |> Array.iteri check_interval;
+          print_endline "All good"))
+    ()
