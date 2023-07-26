@@ -11,7 +11,7 @@ def main():
   max_num_domains = int(argv[2])
   repeats = int(argv[3])
 
-  command_fmt = "dune exec -- %s -num_domains %d"
+  command_fmt = "dune exec -- time/commander/time.exe %s -n 1000000000 -num_domains %d"
   print(repeats)
   stdout.flush()
   for i in range(1, max_num_domains + 1):

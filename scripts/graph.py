@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 from sys import argv, exit
 
@@ -30,8 +31,13 @@ for f_str in argv[2:]:
 y_lin = x
 ax.plot(x, y_lin, '-.')
 
-plt.xlabel("Number of Processors")
-plt.ylabel("Speed Up over Sequential Implementation")
+ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+ax.yaxis.set_major_locator(ticker.MultipleLocator(5.0))
+ax.tick_params(axis='both', which='major', labelsize=15)
+
+plt.title("Inverted Index Creation", loc = 'center', fontsize=20)
+plt.xlabel("Number of Domains", fontsize = 15)
+plt.ylabel("Speed Up", fontsize = 15)
 if len(argv) > 3:
   plt.legend()
   plt.ylim(0, 1.5 * y_max)
