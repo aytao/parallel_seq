@@ -30,7 +30,7 @@ let parallel_scan pool num_domains op elements =
     let x = ref elements.((n / p) - 1) in
     for i = 2 to p do
       let ind = (i * n / p) - 1 in
-      x := op !x elements.(ind);
+      x := op elements.(ind) !x;
       elements.(ind) <- !x
     done;
 
