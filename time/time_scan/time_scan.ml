@@ -20,7 +20,6 @@ let sequential (_seq_type, n) =
     ()
 
 let array_copy (_seq_type, n) =
-  ensure_no_pool "array_copy";
   let n = Option.value ~default:100000 n in
   let arr = Array.init n (fun x -> x) in
   Time_test.time (fun () -> Array.copy arr |> ignore) ()
