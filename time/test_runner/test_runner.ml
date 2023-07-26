@@ -4,6 +4,7 @@ let tests : (string * Time_test.t) list =
     ("scan_domainslib", Time_scan.domainslib);
     ("array_copy", Time_scan.array_copy);
     ("scan_in_place", Time_scan.in_place);
+    ("test_mutating_scan", Time_scan.test_mutating_scan);
   ]
 
 let run test_name config =
