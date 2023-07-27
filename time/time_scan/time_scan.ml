@@ -38,13 +38,12 @@ let domainslib (_seq_type, n) =
 
 let in_place (_seq_type, n) =
   let pool = get_pool "scan_in_place" in
-  let num_domains = Domainslib.Task.get_num_domains pool in
   let n = Option.value ~default:1000000000 n in
   let arr = Array.init n (fun x -> x) in
   Time_test.time
     (fun () ->
       Domainslib.Task.run pool (fun () ->
-          Mutating_scan.parallel_scan pool num_domains ( + ) arr |> ignore))
+          Mutating_scan.parallel_scan pool ( + ) arr |> ignore))
     ()
 
 type interval = Empty | Interval of (int * int)
@@ -73,13 +72,12 @@ let test_mutating_scan (_seq_type, n) =
     | Interval (b, e) -> assert (b = 0 && e = i + 1)
   in
   let pool = get_pool "test_mutating_scan" in
-  let num_domains = Domainslib.Task.get_num_domains pool in
   let n = Option.value ~default:1000000000 n in
   let arr = Array.init n singleton in
   Time_test.time
     (fun () ->
       Domainslib.Task.run pool (fun () ->
-          Mutating_scan.parallel_scan pool num_domains combine_intervals arr
+          Mutating_scan.parallel_scan pool combine_intervals arr
           |> Array.iteri check_interval;
           print_endline "All good"))
     ()
