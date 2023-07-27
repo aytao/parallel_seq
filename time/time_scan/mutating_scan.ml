@@ -1,8 +1,8 @@
 open Domainslib.Task
 
-let parallel_scan pool num_domains op elements =
+let parallel_scan pool op elements =
   let n = Array.length elements in
-  let p = min (n - 1) num_domains in
+  let p = min (n - 1) (get_num_domains pool) in
   let scan_part op elements start finish =
     assert (Array.length elements > finish - start);
     for i = start + 1 to finish do
