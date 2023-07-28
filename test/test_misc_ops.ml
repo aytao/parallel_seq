@@ -1,5 +1,4 @@
 open Parallelseq
-open Sequence_provider
 
 let n : int = (Defaults.sequential_cutoff * Defaults.num_domains_total) + 1
 let num_trials : int = 1_000
@@ -41,8 +40,8 @@ module Test (S : Sequence.S) = struct
     ()
 end
 
-module ParallelTester = Test (ParallelS)
-module SequentialTester = Test (SequentialS)
+module Parallel_tester = Test (Sequence_provider.Parallel)
+module Sequential_tester = Test (Sequence_provider.Sequential)
 
-let _ = ParallelTester.run_tests n
-let _ = SequentialTester.run_tests n
+let _ = Parallel_tester.run_tests n
+let _ = Sequential_tester.run_tests n

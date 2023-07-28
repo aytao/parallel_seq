@@ -1,7 +1,5 @@
 open Parallelseq
 open Matrix
-open Printexc
-open Sequence_provider
 
 let m = 1000
 let n = 1500
@@ -10,7 +8,7 @@ let p = 200
 let get_random_int_arr_arr m n =
   Array.init m (fun i -> Array.init n (fun _ -> Random.int 256))
 
-module Int_Elt = struct
+module Int_elt = struct
   type t = int
 
   let b = 0
@@ -18,7 +16,7 @@ module Int_Elt = struct
   let mul = ( * )
 end
 
-module MatrixMul (M : MATRIX) = struct
+module Matrix_mul (M : Matrix) = struct
   let mul elts1 elts2 =
     let mat1 = M.of_2d_arr elts1 in
     let mat2 = M.of_2d_arr elts2 in
@@ -28,8 +26,8 @@ module MatrixMul (M : MATRIX) = struct
 end
 
 module Test (S : Sequence.S) = struct
-  module BlockMul = MatrixMul (BlockMatrix (Int_Elt) (S))
-  module ArrayMul = MatrixMul (ArrayMatrix (Int_Elt))
+  module Block_mul = Matrix_mul (Block_matrix (Int_elt) (S))
+  module Array_mul = Matrix_mul (Array_matrix (Int_elt))
 
   let test_mul () =
     let equal m1 m2 =
@@ -37,16 +35,16 @@ module Test (S : Sequence.S) = struct
     in
     let elts1 = get_random_int_arr_arr m n in
     let elts2 = get_random_int_arr_arr n p in
-    let block_result = BlockMul.mul elts1 elts2 in
-    let array_result = ArrayMul.mul elts1 elts2 in
+    let block_result = Block_mul.mul elts1 elts2 in
+    let array_result = Array_mul.mul elts1 elts2 in
     let _ = assert (equal array_result block_result) in
     ()
 
   let run_tests () = test_mul ()
 end
 
-module ParallelTester = Test (ParallelS)
-module SequentialTester = Test (SequentialS)
+module Parallel_tester = Test (Sequence_provider.Parallel)
+module Sequential_tester = Test (Sequence_provider.Sequential)
 
-let _ = ParallelTester.run_tests ()
-let _ = SequentialTester.run_tests ()
+let _ = Parallel_tester.run_tests ()
+let _ = Sequential_tester.run_tests ()

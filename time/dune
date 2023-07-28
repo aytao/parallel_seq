@@ -4,14 +4,9 @@
  (libraries parallelseq unix))
 
 (executable
- (name time_block_matrix)
- (modules time_block_matrix)
- (libraries matrix parallelseq time_utils))
-
-(executable
  (name time_index)
  (modules time_index)
- (libraries index parallelseq time_utils))
+ (libraries inverted_index parallelseq time_utils))
 
 (executable
  (name time_array_handler)
@@ -22,5 +17,4 @@
  (section bin)
  (files
   (time_array_handler.exe as time_array_handler)
-  (time_block_matrix.exe as time_block_matrix)
   (time_index.exe as time_index)))

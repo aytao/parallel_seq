@@ -1,0 +1,3 @@
+(library
+ (name time_matrix_mul)
+ (libraries parallelseq matrix time_test domainslib))

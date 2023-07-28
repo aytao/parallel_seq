@@ -8,6 +8,7 @@ let cutoff_arg = ref Defaults.sequential_cutoff
 let force_sequential_arg = ref false
 let test_name = ref ""
 let n_arg = ref (-1)
+let filename_arg = ref None
 let usage_str = "./bin/time.exe TESTNAME [OPTION...]"
 
 let speclist =
@@ -17,7 +18,10 @@ let speclist =
       "Manually set the number of domains used" );
     ("-s", Arg.Set_int cutoff_arg, "Manually adjust the sequential cutoff");
     ("-f", Arg.Set force_sequential_arg, "Force sequencial implementation");
-    ("-n", Arg.Set_int n_arg, "Set the size of the test ran");
+    ("-n", Arg.Set_int n_arg, "Set the length of the array (for array tests)");
+    ( "-i",
+      Arg.String (fun filename -> filename_arg := Some filename),
+      "Set the index file to be used" );
   ]
 
 let () = Arg.parse speclist (fun test -> test_name := test) usage_str;;
@@ -32,10 +36,11 @@ let seq_type =
       Task.setup_pool ~name:Time_test.time_test_pool_name
         ~num_domains:(!domains_arg - 1) ()
     in
-    Parallel (pool, !cutoff_arg)
+    Parallel { pool; sequential_cutoff = !cutoff_arg }
 
 let n = if !n_arg < 0 then None else Some !n_arg
+let filename = !filename_arg
 
 let _ =
-  Test_runner.run !test_name (seq_type, n) |> print_float;
+  Test_runner.run ?filename ?n seq_type !test_name |> print_float;
   print_newline ()

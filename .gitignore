@@ -34,4 +34,5 @@ _opam/
 # index data
 index_data/*
 
-# VSCode 
+# VSCode
+.vscode/*
