@@ -5,6 +5,7 @@ let tests : (string * Time_test.t) list =
     ("array_copy", With_length Time_scan.array_copy);
     ("scan_in_place", With_length Time_scan.in_place);
     ("block_matrix_mul", With_length Time_matrix_mul.block);
+    ("inverted_index", With_file Time_inverted_index.index);
   ]
 
 let run ?filename ?n seq_type test_name =

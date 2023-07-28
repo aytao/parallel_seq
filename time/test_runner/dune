@@ -1,3 +1,9 @@
 (library
  (name test_runner)
- (libraries parallelseq unix time_test time_scan time_matrix_mul))
+ (libraries
+  parallelseq
+  unix
+  time_test
+  time_scan
+  time_matrix_mul
+  time_inverted_index))

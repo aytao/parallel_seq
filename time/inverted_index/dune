@@ -1,0 +1,3 @@
+(library
+ (name time_inverted_index)
+ (libraries parallelseq inverted_index time_test domainslib))
