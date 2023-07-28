@@ -1,6 +1,6 @@
 open Parallelseq
 
-module type MatrixElt = sig
+module type Matrix_elt = sig
   type t
 
   val b : t
@@ -8,7 +8,7 @@ module type MatrixElt = sig
   val mul : t -> t -> t
 end
 
-module type MATRIX = sig
+module type Matrix = sig
   type elt
   type vect
   type matrix
@@ -22,5 +22,7 @@ module type MATRIX = sig
   val matrix_mul : matrix -> matrix -> matrix
 end
 
-module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t
-module BlockMatrix (E : MatrixElt) (S : Sequence.S) : MATRIX with type elt = E.t
+module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t
+
+module Block_matrix (E : Matrix_elt) (S : Sequence.S) :
+  Matrix with type elt = E.t

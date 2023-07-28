@@ -1,5 +1,4 @@
 open Parallelseq
-open Index
 open Time_utils
 
 let _ = S.empty ()

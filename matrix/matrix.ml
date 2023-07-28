@@ -1,6 +1,6 @@
 open Parallelseq
 
-module type MatrixElt = sig
+module type Matrix_elt = sig
   type t
 
   val b : t
@@ -8,7 +8,7 @@ module type MatrixElt = sig
   val mul : t -> t -> t
 end
 
-module type MATRIX = sig
+module type Matrix = sig
   type elt
   type vect
   type matrix
@@ -40,7 +40,7 @@ let bin_search nth s compare i lo hi =
   in
   helper lo hi
 
-module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
+module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
   type elt = E.t
   type vect = elt array
   type matrix = elt array array
@@ -107,8 +107,8 @@ module ArrayMatrix (E : MatrixElt) : MATRIX with type elt = E.t = struct
       Array.init m (fun i -> Array.init n (fun j -> body i j))
 end
 
-module BlockMatrix (E : MatrixElt) (S : Sequence.S) :
-  MATRIX with type elt = E.t = struct
+module Block_matrix (E : Matrix_elt) (S : Sequence.S) :
+  Matrix with type elt = E.t = struct
   type elt = E.t
   type vect = elt S.t
   type matrix = elt S.t S.t

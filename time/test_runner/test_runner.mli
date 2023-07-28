@@ -1,1 +1,2 @@
-val run : string -> Time_test.config -> float
+val run :
+  ?filename:string -> ?n:int -> Parallelseq.Sequence.seq_type -> string -> float
