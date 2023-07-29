@@ -15,7 +15,7 @@ end
 
 module LocSet = Set.Make (Location)
 
-(* doc_loc_index  a mapping with:
+(* doc_loc_index is a mapping with:
  * strings as keys
  * Sets of locations -- each location has
      doc_id:  which document this word is in
@@ -99,36 +99,17 @@ let process (docs_filename : string) (chunk_start : int) (chunk_end : int) =
 
 module Indexer (S : Sequence.S) = struct
   let make_index ?num_chunks (docs_filename : string) : doc_loc_index =
-    let ceil_div num den = (num + den - 1) / den in
     let docs_file = open_in_bin docs_filename in
-    let file_len = in_channel_length docs_file in
+    let file_len = in_channel_length docs_file - 1 in
     let num_chunks =
       Option.value num_chunks ~default:Defaults.num_domains_total
     in
-    let chunk_size = ceil_div file_len num_chunks in
     let () = close_in_noerr docs_file in
     S.tabulate
       (fun i ->
-        let chunk_start = i * chunk_size in
-        let chunk_end = min ((i + 1) * chunk_size) (file_len - 1) in
+        let chunk_start = i * file_len / num_chunks in
+        let chunk_end = (i + 1) * file_len / num_chunks in
         process docs_filename chunk_start chunk_end)
       num_chunks
     |> S.reduce combine_indexes DMap.empty
 end
-
-(* let index = make_index "index_data/index_1000.txt";;
-
-   DMap.iter
-     (fun word seq ->
-       print_string "Key: {";
-       print_string word;
-       print_string "} Values: {";
-       LocSet.iter
-         (fun (i, w, c) ->
-           print_int i;
-           print_string ":";
-           print_int w;
-           print_string " ")
-         seq;
-       print_string "}\n")
-     index *)
