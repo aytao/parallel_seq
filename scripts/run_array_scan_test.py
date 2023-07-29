@@ -1,7 +1,6 @@
 import os
 from sys import argv, exit, stderr, stdout
 
-
 def main():
   if len(argv) != 4:
     print("Usage: python", argv[0], "[time name]", "[max num_domains]", "[repeats]")
