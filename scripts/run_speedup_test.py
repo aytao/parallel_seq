@@ -1,5 +1,5 @@
 import os
-from sys import argv, exit, stderr
+from sys import argv, exit, stderr, stdout
 
 def main():
   if len(argv) < 4:
@@ -29,7 +29,8 @@ def main():
   stderr.flush()
   
   command_fmt = command + " -num_domains %d"
-
+  print(repeats)
+  stdout.flush()
   for i in range(1, max_num_domains + 1):
     print("Running '%s' with %d domain(s)..." %
           (test_name, i), file=stderr, end="")
