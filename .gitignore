@@ -32,7 +32,7 @@ _opam/
 .ocamlformat
 
 # index data
-index_data/*
+index_data/test_index_1000*
 
 # VSCode
 .vscode/*
