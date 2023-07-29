@@ -19,18 +19,19 @@ def main():
   repeats = int(argv[3])
 
   command = "dune exec -- time/commander/time.exe %s %s" % (test_name, argv[4])
+  print(repeats)
+  stdout.flush()
 
   print("Running '%s' sequentially..." % test_name, file=stderr, end="")
   stderr.flush()
-
-  execute(command + " -f")
+  
+  for _ in range(repeats):
+    execute(command + " -f")
 
   print("Done", file=stderr)
   stderr.flush()
   
   command_fmt = command + " -num_domains %d"
-  print(repeats)
-  stdout.flush()
   for i in range(1, max_num_domains + 1):
     print("Running '%s' with %d domain(s)..." %
           (test_name, i), file=stderr, end="")
