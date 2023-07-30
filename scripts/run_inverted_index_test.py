@@ -37,7 +37,7 @@ def main():
   stderr.flush()
   
   command_fmt = command + " -num_domains %d"
-  for i in range(1, max_num_domains + 1):
+  for i in range(min_num_domains, max_num_domains + 1):
     print("Running '%s' with %d domain(s)..." %
           (test_name, i), file=stderr, end="")
     stderr.flush()
