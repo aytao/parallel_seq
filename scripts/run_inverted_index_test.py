@@ -42,7 +42,7 @@ def main():
           (test_name, i), file=stderr, end="")
     stderr.flush()
     for _ in range(repeats):
-      execute("dd of=/tmp/%s oflag=nocache conv=notrunc,fdatasync count=0" % filename)
+      execute("dd of=%s oflag=nocache conv=notrunc,fdatasync count=0" % filename)
       execute(command_fmt % i)
 
     print("Done", file=stderr)
