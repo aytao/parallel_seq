@@ -41,7 +41,8 @@ let add_page (id : int) (contents : string) (index : doc_loc_index) :
   let add_word word w_loc c_loc index =
     let word = String.lowercase_ascii word in
     let set =
-      (try DMap.find word index with Not_found -> LocSet.empty)
+      DMap.find_opt word index
+      |> Option.value ~default:LocSet.empty
       |> LocSet.add (id, w_loc, c_loc)
     in
     DMap.add word set index
