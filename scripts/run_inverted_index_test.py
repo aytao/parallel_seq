@@ -21,8 +21,9 @@ def main():
 
   filename = "/tmp/%s" % argv[4].split("/")[-1]
   execute("cp -f %s %s" % (argv[4], filename))
+  execute("cp -f _build/default/time/commander/time.exe /tmp/time_test.exe")
 
-  command = "dune exec -- time/commander/time.exe %s -i %s" % (test_name, filename)
+  command = "/tmp/time_test.exe %s -i %s" % (test_name, filename)
   print(repeats)
   stdout.flush()
 
