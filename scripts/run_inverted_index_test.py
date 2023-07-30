@@ -24,6 +24,7 @@ def main():
   execute("dune build")
   execute("cp -f _build/default/time/commander/time.exe /tmp/time_test.exe")
 
+  dd_command = "dd of=%s oflag=nocache conv=notrunc,fdatasync count=0 2> /dev/null" % filename
   command = "/tmp/time_test.exe %s -i %s" % (test_name, filename)
   print(repeats)
   stdout.flush()
@@ -32,7 +33,7 @@ def main():
   stderr.flush()
   
   for _ in range(repeats):
-    execute("dd of=%s oflag=nocache conv=notrunc,fdatasync count=0" % filename)
+    execute(dd_command)
     execute(command + " -f")
 
   print("Done", file=stderr)
@@ -44,7 +45,7 @@ def main():
           (test_name, i), file=stderr, end="")
     stderr.flush()
     for _ in range(repeats):
-      execute("dd of=%s oflag=nocache conv=notrunc,fdatasync count=0 2> /dev/null" % filename)
+      execute(dd_command)
       execute(command_fmt % i)
 
     print("Done", file=stderr)
