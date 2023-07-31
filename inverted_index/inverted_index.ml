@@ -70,10 +70,10 @@ let process (docs_filename : string) (chunk_start : int) (chunk_end : int) =
   let docs_file = open_in_bin docs_filename in
   (* seek to next start of line *)
   let () =
-    if chunk_start != 0 then
+    if chunk_start <> 0 then
       let () = seek_in docs_file (chunk_start - 1) in
       let c = input_char docs_file in
-      if c != '\n' then
+      if c <> '\n' then
         let _ = input_line docs_file in
         ()
   in

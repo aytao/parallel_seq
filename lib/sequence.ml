@@ -70,7 +70,7 @@ module ArraySeq : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then raise (Invalid_argument "Parallel_seq.zip")
+    if len1 <> len2 then raise (Invalid_argument "Parallel_seq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split s i = (Array.sub s 0 i, Array.sub s i (Array.length s - i))
@@ -155,7 +155,7 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then raise (Invalid_argument "Parallel_seq.zip")
+    if len1 <> len2 then raise (Invalid_argument "Parallel_seq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split (s : 'a t) (i : int) : 'a t * 'a t =

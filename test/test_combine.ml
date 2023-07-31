@@ -11,7 +11,7 @@ let combine_intervals (i1 : interval) (i2 : interval) : interval =
   | Empty, _ -> i2
   | _, Empty -> i1
   | Interval (b1, e1), Interval (b2, e2) ->
-      if e1 != b2 then (
+      if e1 <> b2 then (
         Printf.eprintf "Intervals: (%d, %d), (%d, %d)\n" b1 e1 b2 e2;
         failwith "Invalid interval")
       else Interval (b1, e2)

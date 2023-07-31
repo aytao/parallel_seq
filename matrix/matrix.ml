@@ -21,7 +21,7 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
     else
       let len = Array.length eaa.(0) in
       let _ =
-        Array.iter (fun arr -> if Array.length arr != len then raise exn) eaa
+        Array.iter (fun arr -> if Array.length arr <> len then raise exn) eaa
       in
       (* init *)
       Array.init (Array.length eaa) (fun i -> Array.copy eaa.(i))
@@ -54,13 +54,13 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
   let vect_mul mat vect =
     let m, n = dimensions mat in
     let len = Array.length vect in
-    if n != len then raise (Invalid_argument "ArrayMatrix.vect_mul")
+    if n <> len then raise (Invalid_argument "ArrayMatrix.vect_mul")
     else Array.init m (fun i -> dot mat.(i) vect)
 
   let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
-    if p != p' then raise (Invalid_argument "SeqMatrix.matrix_mul")
+    if p <> p' then raise (Invalid_argument "SeqMatrix.matrix_mul")
     else
       let body i j =
         let m1_i = mat1.(i) in
@@ -141,7 +141,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
   let vect_mul mat vect =
     let _m, n = dimensions mat in
     let len = S.length vect in
-    if n != len then raise (Invalid_argument "BlockMatrix.vect_mul")
+    if n <> len then raise (Invalid_argument "BlockMatrix.vect_mul")
     else
       S.tabulate (fun i -> dot (S.nth mat i) vect E.mul E.add b) (S.length mat)
 
@@ -151,7 +151,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
 
   let submatrix_mul sm1 sm2 =
     let m, p, n = (sm1.m, sm1.n, sm2.n) in
-    (* if p != p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else *)
+    (* if p <> p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else *)
     let body r c =
       let acc = ref b in
       for i = 0 to p - 1 do
@@ -179,7 +179,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
   let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
-    if p != p' then raise (Invalid_argument "BlockMatrix.matrix_mul")
+    if p <> p' then raise (Invalid_argument "BlockMatrix.matrix_mul")
     else
       let ceil_div num den = (num + den - 1) / den in
       let submat_size = Defaults.sequential_cutoff in

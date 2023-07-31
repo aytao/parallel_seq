@@ -30,9 +30,3 @@ _opam/
 
 # ocamlformat
 .ocamlformat
-
-# index data
-inverted_index/index_data/test_index_1000*
-
-# VSCode
-.vscode/*
