@@ -5,8 +5,8 @@ synopsis:
 maintainer: ["Andrew Tao"]
 authors: ["Andrew Tao"]
 license: "LGPL-2.1-or-later"
-homepage: "https://github.com/aytao/ParallelSequences"
-bug-reports: "https://github.com/aytao/ParallelSequences/issues"
+homepage: "https://github.com/aytao/parallel_seq"
+bug-reports: "https://github.com/aytao/parallel_seq/issues"
 depends: [
   "dune" {>= "3.6"}
   "ocaml" {>= "5.0"}
@@ -27,4 +27,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/aytao/ParallelSequences.git"
+dev-repo: "git+https://github.com/aytao/parallel_seq.git"

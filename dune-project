@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github aytao/ParallelSequences))
+ (github aytao/parallel_seq))
 
 (authors "Andrew Tao")
 
