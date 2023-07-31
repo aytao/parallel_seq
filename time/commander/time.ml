@@ -1,6 +1,5 @@
 open Domainslib
 open Parallel_seq
-open Arg
 
 let domains_arg = ref Defaults.num_domains_total
 let cutoff_arg = ref Defaults.sequential_cutoff

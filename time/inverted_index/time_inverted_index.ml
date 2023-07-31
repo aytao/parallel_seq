@@ -1,4 +1,3 @@
-open Parallel_seq
 open Inverted_index
 
 let index (seq_type : Parallel_seq.seq_type) filename =

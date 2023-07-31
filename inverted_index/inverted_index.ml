@@ -25,7 +25,7 @@ module LocSet = Set.Make (Location)
 type doc_loc_index = LocSet.t DMap.t
 
 let combine_indexes (x : doc_loc_index) (y : doc_loc_index) : doc_loc_index =
-  let combine k a b = Some (LocSet.union a b) in
+  let combine _ a b = Some (LocSet.union a b) in
   DMap.union combine x y
 
 let isalpha c =

@@ -1,4 +1,3 @@
-open Parallel_seq
 open Matrix
 
 module Float_elt = struct
@@ -10,7 +9,7 @@ module Float_elt = struct
 end
 
 let get_random_float_arr_arr n =
-  Array.init n (fun i -> Array.init n (fun _ -> Random.float 1.))
+  Array.init n (fun _ -> Array.init n (fun _ -> Random.float 1.))
 
 let block seq_type n =
   let n = Option.value n ~default:2000 in
