@@ -1,13 +1,8 @@
-open Parallelseq
+open Parallel_seq
 
 let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total * 10
 
 type interval = Empty | Interval of (int * int)
-
-let string_of_interval (interval : interval) : string =
-  match interval with
-  | Empty -> "empty"
-  | Interval (b, e) -> Printf.sprintf "(%d, %d)" b e
 
 let singleton (i : int) : interval = Interval (i, i + 1)
 
@@ -21,7 +16,7 @@ let combine_intervals (i1 : interval) (i2 : interval) : interval =
         failwith "Invalid interval")
       else Interval (b1, e2)
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   let test_reduce_ordering n : unit =
     let interval = S.tabulate singleton n |> S.reduce combine_intervals Empty in
     match interval with

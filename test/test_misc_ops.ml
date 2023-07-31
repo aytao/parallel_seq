@@ -1,11 +1,10 @@
-open Parallelseq
+open Parallel_seq
 
 let n : int = (Defaults.sequential_cutoff * Defaults.num_domains_total) + 1
-let num_trials : int = 1_000
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   let test_map_reduce n =
-    let s = S.tabulate (fun i -> Random.bits ()) n in
+    let s = S.tabulate (fun _ -> Random.bits ()) n in
     let mpr = S.map_reduce (fun x -> x / 2) ( + ) 0 s in
     let mpr' = S.map (fun x -> x / 2) s |> S.reduce ( + ) 0 in
     assert (mpr = mpr')

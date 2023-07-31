@@ -27,7 +27,7 @@ for f_str in argv[3:]:
     y_max = max(np.max(times), y_max)
     ax.plot(x, times, label=f_str.split("/")[-1])
 
-ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
+# ax.xaxis.set_major_locator(ticker.MultipleLocator(20))
 ax.yaxis.set_major_locator(ticker.MultipleLocator(5.0))
 ax.tick_params(axis='both', which='major', labelsize=15)
 

@@ -1,6 +1,5 @@
 open Domainslib
-open Parallelseq
-open Sequence
+open Parallel_seq
 open Arg
 
 let domains_arg = ref Defaults.num_domains_total
@@ -29,7 +28,7 @@ let () = Arg.parse speclist (fun test -> test_name := test) usage_str;;
 if !domains_arg <= 0 then failwith "Must have at least one domain"
 else if !cutoff_arg <= 0 then failwith "Sequential cutoff must be positive"
 
-let seq_type =
+let (seq_type : seq_type) =
   if !force_sequential_arg then Sequential
   else
     let pool =

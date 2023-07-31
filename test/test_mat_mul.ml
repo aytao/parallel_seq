@@ -1,4 +1,4 @@
-open Parallelseq
+open Parallel_seq
 open Matrix
 
 let m = 1000
@@ -6,7 +6,7 @@ let n = 1500
 let p = 200
 
 let get_random_int_arr_arr m n =
-  Array.init m (fun i -> Array.init n (fun _ -> Random.int 256))
+  Array.init m (fun _ -> Array.init n (fun _ -> Random.int 256))
 
 module Int_elt = struct
   type t = int
@@ -25,7 +25,7 @@ module Matrix_mul (M : Matrix) = struct
     Array.init m (fun i -> Array.init n (fun j -> M.get i j result))
 end
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   module Block_mul = Matrix_mul (Block_matrix (Int_elt) (S))
   module Array_mul = Matrix_mul (Array_matrix (Int_elt))
 

@@ -1,7 +1,7 @@
 (library
  (name test_runner)
  (libraries
-  parallelseq
+  parallel_seq
   unix
   time_test
   time_scan

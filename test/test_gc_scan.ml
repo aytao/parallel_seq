@@ -1,4 +1,4 @@
-open Parallelseq
+open Parallel_seq
 
 let n : int = (Defaults.sequential_cutoff * Defaults.num_domains_total) + 1
 let weak_arr = Weak.create n
@@ -8,7 +8,7 @@ let f i =
   Weak.set weak_arr i (Some v);
   v
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   let is_all_full wa =
     S.tabulate (fun i -> Weak.check wa i) (Weak.length wa)
     |> S.reduce ( && ) true
