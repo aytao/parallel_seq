@@ -1,6 +1,5 @@
 import os
-from sys import argv, exit, stderr, stdout
-
+from sys import argv, exit, stderr
 
 def main():
   if len(argv) < 4:
