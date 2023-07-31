@@ -1,4 +1,4 @@
-open Parallelseq
+open Parallel_seq
 
 type doc_id = int
 
@@ -10,6 +10,6 @@ module LocSet : Set.S with type elt = location
 
 type doc_loc_index = LocSet.t DMap.t
 
-module Indexer (S : Sequence.S) : sig
+module Indexer (S : S) : sig
   val make_index : ?num_chunks:int -> string -> doc_loc_index
 end

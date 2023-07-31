@@ -1,13 +1,13 @@
-open Parallelseq
+open Parallel_seq
 
 let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   let test_length n =
     let s = S.tabulate (fun i -> i) n in
     assert (S.length s = n)
 
-  let test_empty n =
+  let test_empty () =
     let s = S.empty () in
     assert (S.length s = 0)
 
@@ -24,7 +24,7 @@ module Test (S : Sequence.S) = struct
 
   let run_tests n =
     let _ = test_length n in
-    let _ = test_empty n in
+    let _ = test_empty () in
     let _ = test_singleton n in
     let _ = test_nth n in
     ()

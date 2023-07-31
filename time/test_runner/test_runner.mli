@@ -1,2 +1,1 @@
-val run :
-  ?filename:string -> ?n:int -> Parallelseq.Sequence.seq_type -> string -> float
+val run : ?filename:string -> ?n:int -> Parallel_seq.seq_type -> string -> float

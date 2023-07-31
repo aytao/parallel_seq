@@ -1,4 +1,4 @@
 (executable
  (name time)
  (modules time)
- (libraries parallelseq time_test test_runner))
+ (libraries parallel_seq time_test test_runner))

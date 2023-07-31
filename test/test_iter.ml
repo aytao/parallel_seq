@@ -1,4 +1,4 @@
-open Parallelseq
+open Parallel_seq
 
 let n : int = Defaults.sequential_cutoff * Defaults.num_domains_total * 10
 
@@ -6,7 +6,7 @@ let f (counter : int ref) (v : int) : unit =
   assert (v = !counter);
   counter := !counter + 1
 
-module Test (S : Sequence.S) = struct
+module Test (S : S) = struct
   let test_iter n : unit =
     let r = ref 0 in
     S.tabulate (fun i -> i) n |> S.iter (f r);

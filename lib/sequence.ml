@@ -18,35 +18,11 @@
 (**************************************************************************)
 
 open Domainslib
+include Sequence_intf
 
 module type Parallel_array_configs = sig
   val pool : Task.pool
   val sequential_cutoff : int
-end
-
-module type S = sig
-  type 'a t
-
-  val iter : ('a -> unit) -> 'a t -> unit
-  val iteri : (int -> 'a -> unit) -> 'a t -> unit
-  val length : 'a t -> int
-  val empty : unit -> 'a t
-  val singleton : 'a -> 'a t
-  val nth : 'a t -> int -> 'a
-  val cons : 'a -> 'a t -> 'a t
-  val tabulate : (int -> 'a) -> int -> 'a t
-  val repeat : 'a -> int -> 'a t
-  val append : 'a t -> 'a t -> 'a t
-  val seq_of_array : 'a array -> 'a t
-  val array_of_seq : 'a t -> 'a array
-  val zip : 'a t * 'b t -> ('a * 'b) t
-  val split : 'a t -> int -> 'a t * 'a t
-  val map : ('a -> 'b) -> 'a t -> 'b t
-  val reduce : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a
-  val map_reduce : ('a -> 'b) -> ('b -> 'b -> 'b) -> 'b -> 'a t -> 'b
-  val scan : ('a -> 'a -> 'a) -> 'a -> 'a t -> 'a t
-  val flatten : 'a t t -> 'a t
-  val filter : ('a -> bool) -> 'a t -> 'a t
 end
 
 module ArraySeq : S = struct
@@ -94,7 +70,7 @@ module ArraySeq : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then raise (Invalid_argument "Parallelseq.zip")
+    if len1 != len2 then raise (Invalid_argument "Parallel_seq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split s i = (Array.sub s 0 i, Array.sub s i (Array.length s - i))
@@ -136,12 +112,6 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
   let num_domains = Task.get_num_domains pool
   let run (task : 'a Task.task) : 'a = Task.run pool task
 
-  let both (f : 'a -> 'b) (x : 'a) (g : 'c -> 'd) (y : 'c) : 'b * 'd =
-    run (fun _ ->
-        let xp = Task.async pool (fun _ -> f x) in
-        let y = g y in
-        (Task.await pool xp, y))
-
   let parallel_for (n : int) (body : int -> unit) : unit =
     run (fun _ -> Task.parallel_for ~start:0 ~finish:(n - 1) ~body pool)
 
@@ -150,7 +120,7 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
 
   let tabulate (f : int -> 'a) (n : int) : 'a t =
     if n = 0 then empty ()
-    else if n < 0 then raise (Invalid_argument "Parallelseq.tabulate")
+    else if n < 0 then raise (Invalid_argument "Parallel_seq.tabulate")
     else
       let arr : 'a array = Array_handler.get_uninitialized n in
       parallel_for n (fun i -> arr.(i) <- f i);
@@ -165,11 +135,6 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
   let clone (s : 'a t) : 'a t = tabulate (fun i -> s.(i)) (Array.length s)
   let iter = Array.iter
   let iteri = Array.iteri
-
-  let print (to_string : 'a -> string) (s : 'a t) : unit =
-    iter (fun v -> Printf.printf "%s, " (to_string v)) s;
-    print_newline ()
-
   let length : 'a t -> int = Array.length
 
   let cons (x : 'a) (s : 'a t) : 'a t =
@@ -190,12 +155,12 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
 
   let zip ((s1, s2) : 'a t * 'b t) : ('a * 'b) t =
     let len1, len2 = (length s1, length s2) in
-    if len1 != len2 then raise (Invalid_argument "Parallelseq.zip")
+    if len1 != len2 then raise (Invalid_argument "Parallel_seq.zip")
     else tabulate (fun i -> (s1.(i), s2.(i))) len1
 
   let split (s : 'a t) (i : int) : 'a t * 'a t =
     let len = length s in
-    if i < 0 || i > len then raise (Invalid_argument "Parallelseq.split")
+    if i < 0 || i > len then raise (Invalid_argument "Parallel_seq.split")
     else
       let l = Array_handler.get_uninitialized i in
       let r = Array_handler.get_uninitialized (len - i) in
@@ -213,7 +178,7 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
     let len = length s in
     let tree = clone s in
     let group_subtrees (subtree_size : int) : unit =
-      let rec group_sequentially (group_num : int) : unit =
+      let group_sequentially (group_num : int) : unit =
         let offset = group_num * subtree_size * k in
         let acc = ref b in
         let last = min k ((len - offset) / subtree_size) in
@@ -250,12 +215,12 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
     in
     get_sum last_size (-1) b
 
-  let collapse_fenwick_tree (f : 'a -> 'a -> 'a) (b : 'a) (k : int)
-      (tree : 'a array) (last_size : int) : 'a t =
+  let collapse_fenwick_tree (f : 'a -> 'a -> 'a) (k : int) (tree : 'a array)
+      (last_size : int) : 'a t =
     let len = Array.length tree in
     let collapse_layer (prev_size : int) : unit =
       let subtree_size = prev_size / k in
-      let rec collapse_sequentially (group_num : int) : unit =
+      let collapse_sequentially (group_num : int) : unit =
         let offset = (group_num + 1) * prev_size in
         let last = min (k - 1) ((len - offset) / subtree_size) in
         (* No need to do first *)
@@ -278,7 +243,7 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
     tree
 
   let get_fenwick_k (n : int) : int =
-    min (max 2 (n / num_domains)) Defaults.sequential_cutoff
+    min (max 2 (n / num_domains)) P.sequential_cutoff
 
   let reduce (g : 'a -> 'a -> 'a) (b : 'a) (s : 'a t) : 'a =
     match length s with
@@ -302,7 +267,7 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
     | len ->
         let k = get_fenwick_k len in
         let tree, size = build_fenwick_tree f b k s in
-        collapse_fenwick_tree f b k tree size
+        collapse_fenwick_tree f k tree size
 
   let flatten (ss : 'a t t) : 'a t =
     if length ss = 0 then empty ()
@@ -334,10 +299,6 @@ module ParallelArraySeq (P : Parallel_array_configs) : S = struct
       parallel_for len body;
       filtered
 end
-
-type seq_type =
-  | Sequential
-  | Parallel of { pool : Domainslib.Task.pool; sequential_cutoff : int }
 
 let get_module (seq_type : seq_type) : (module S) =
   match seq_type with

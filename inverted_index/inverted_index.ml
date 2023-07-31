@@ -1,4 +1,4 @@
-open Parallelseq
+open Parallel_seq
 
 type doc_id = int
 
@@ -98,7 +98,7 @@ let process (docs_filename : string) (chunk_start : int) (chunk_end : int) =
   let () = close_in docs_file in
   index
 
-module Indexer (S : Sequence.S) = struct
+module Indexer (S : S) = struct
   let make_index ?num_chunks (docs_filename : string) : doc_loc_index =
     let docs_file = open_in_bin docs_filename in
     let file_len = in_channel_length docs_file - 1 in

@@ -1,4 +1,4 @@
-type thing = Foo | Bar of int
+type thing = Bar of int
 
 let f wa int_array i =
   let w = Bar i in

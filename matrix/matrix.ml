@@ -1,44 +1,10 @@
-open Parallelseq
-
-module type Matrix_elt = sig
-  type t
-
-  val b : t
-  val add : t -> t -> t
-  val mul : t -> t -> t
-end
-
-module type Matrix = sig
-  type elt
-  type vect
-  type matrix
-
-  val of_2d_arr : elt array array -> matrix
-  val get : int -> int -> matrix -> elt
-  val dimensions : matrix -> int * int
-  val transpose : matrix -> matrix
-  val vect_of_array : elt array -> vect
-  val vect_mul : matrix -> vect -> vect
-  val matrix_mul : matrix -> matrix -> matrix
-end
+open Parallel_seq
+include Matrix_intf
 
 let check_index row col m n s =
   if row < 0 || row >= m || col < 0 || col >= n then raise (Invalid_argument s)
 
 let check_size_legal m n s = if m <= 0 || n <= 0 then raise (Invalid_argument s)
-
-let bin_search nth s compare i lo hi =
-  let rec helper lo hi =
-    if hi <= lo then -1
-    else
-      let mid = lo + (hi - (lo / 2)) in
-      let v = nth s mid in
-      let cmp = compare v i in
-      if cmp < 0 then helper (mid + 1) hi
-      else if cmp > 0 then helper lo mid
-      else mid
-  in
-  helper lo hi
 
 module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
   type elt = E.t
@@ -107,8 +73,8 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
       Array.init m (fun i -> Array.init n (fun j -> body i j))
 end
 
-module Block_matrix (E : Matrix_elt) (S : Sequence.S) :
-  Matrix with type elt = E.t = struct
+module Block_matrix (E : Matrix_elt) (S : S) :
+  Matrix with type elt = E.t and type vect = E.t S.t = struct
   type elt = E.t
   type vect = elt S.t
   type matrix = elt S.t S.t
@@ -173,13 +139,13 @@ module Block_matrix (E : Matrix_elt) (S : Sequence.S) :
   let vect_of_array = S.seq_of_array
 
   let vect_mul mat vect =
-    let m, n = dimensions mat in
+    let _m, n = dimensions mat in
     let len = S.length vect in
     if n != len then raise (Invalid_argument "BlockMatrix.vect_mul")
     else
       S.tabulate (fun i -> dot (S.nth mat i) vect E.mul E.add b) (S.length mat)
 
-  let submatrix_get row col { elts; row_start; col_start; m; n } =
+  let submatrix_get row col { elts; row_start; col_start; m = _; n = _ } =
     (* let _ = check_index row col m n "BlockMatrix.submatrix_get" in *)
     S.nth (S.nth elts (row_start + row)) (col_start + col)
 

@@ -1,13 +1,11 @@
 open Domainslib
-open Parallelseq
-open Sequence
+open Parallel_seq
 
-let sequential_m = Sequence.get_module Sequential
+let sequential_m = get_module Sequential
 let pool = Task.setup_pool ~num_domains:(Defaults.num_domains_total - 1) ()
 
 let parallel_m =
-  Sequence.get_module
-    (Parallel { pool; sequential_cutoff = Defaults.sequential_cutoff })
+  get_module (Parallel { pool; sequential_cutoff = Defaults.sequential_cutoff })
 
-module Sequential = (val sequential_m : Sequence.S)
-module Parallel = (val parallel_m : Sequence.S)
+module Sequential = (val sequential_m : S)
+module Parallel = (val parallel_m : S)
