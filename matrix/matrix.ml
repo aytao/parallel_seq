@@ -16,7 +16,7 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
   let of_2d_arr (eaa : elt array array) =
     (* Check legal lengths, ensure all rows same length *)
     let m = Array.length eaa in
-    let exn = Invalid_argument "ArrayMatrix.of_2d_arr" in
+    let exn = Invalid_argument "Array_matrix.of_2d_arr" in
     if m <= 0 then raise exn
     else
       let len = Array.length eaa.(0) in
@@ -30,7 +30,7 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
     let _ =
       check_index row col (Array.length mat)
         (Array.length mat.(0))
-        "ArrayMatrix.get"
+        "Array_matrix.get"
     in
     mat.(row).(col)
 
@@ -54,13 +54,13 @@ module Array_matrix (E : Matrix_elt) : Matrix with type elt = E.t = struct
   let vect_mul mat vect =
     let m, n = dimensions mat in
     let len = Array.length vect in
-    if n <> len then raise (Invalid_argument "ArrayMatrix.vect_mul")
+    if n <> len then raise (Invalid_argument "Array_matrix.vect_mul")
     else Array.init m (fun i -> dot mat.(i) vect)
 
   let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
-    if p <> p' then raise (Invalid_argument "SeqMatrix.matrix_mul")
+    if p <> p' then raise (Invalid_argument "Array_matrix.matrix_mul")
     else
       let body i j =
         let m1_i = mat1.(i) in
@@ -110,7 +110,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
       | Base | Diff -> 0
       | Same i -> i
     in
-    let _ = check_size_legal m n "BlockMatrix.of_2d_arr" in
+    let _ = check_size_legal m n "Block_matrix.of_2d_arr" in
     (* init *)
     S.tabulate
       (fun i -> S.tabulate (fun j -> eaa.(i).(j)) (Array.length eaa.(i)))
@@ -120,7 +120,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
     let _ =
       check_index row col (S.length mat)
         (S.length (S.nth mat 0))
-        "BlockMatrix.get"
+        "Block_matrix.get"
     in
     S.nth (S.nth mat row) col
 
@@ -141,17 +141,17 @@ module Block_matrix (E : Matrix_elt) (S : S) :
   let vect_mul mat vect =
     let _m, n = dimensions mat in
     let len = S.length vect in
-    if n <> len then raise (Invalid_argument "BlockMatrix.vect_mul")
+    if n <> len then raise (Invalid_argument "Block_matrix.vect_mul")
     else
       S.tabulate (fun i -> dot (S.nth mat i) vect E.mul E.add b) (S.length mat)
 
   let submatrix_get row col { elts; row_start; col_start; m = _; n = _ } =
-    (* let _ = check_index row col m n "BlockMatrix.submatrix_get" in *)
+    (* let _ = check_index row col m n "Block_matrix.submatrix_get" in *)
     S.nth (S.nth elts (row_start + row)) (col_start + col)
 
   let submatrix_mul sm1 sm2 =
     let m, p, n = (sm1.m, sm1.n, sm2.n) in
-    (* if p <> p' then raise (Invalid_argument "BlockMatrix.submatrix_mul") else *)
+    (* if p <> p' then raise (Invalid_argument "Block_matrix.submatrix_mul") else *)
     let body r c =
       let acc = ref b in
       for i = 0 to p - 1 do
@@ -179,7 +179,7 @@ module Block_matrix (E : Matrix_elt) (S : S) :
   let matrix_mul mat1 mat2 =
     let m, p = dimensions mat1 in
     let p', n = dimensions mat2 in
-    if p <> p' then raise (Invalid_argument "BlockMatrix.matrix_mul")
+    if p <> p' then raise (Invalid_argument "Block_matrix.matrix_mul")
     else
       let ceil_div num den = (num + den - 1) / den in
       let submat_size = Defaults.sequential_cutoff in

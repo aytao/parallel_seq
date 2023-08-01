@@ -21,4 +21,3 @@
  (dev
   (flags (:standard))))
 
-;; Change compile flags to the ocaml defaults

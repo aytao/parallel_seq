@@ -4,11 +4,6 @@
  (libraries parallel_seq domainslib))
 
 (test
- (name test_array_handler)
- (libraries parallel_seq)
- (modules test_array_handler))
-
-(test
  (name test_pointer)
  (modules test_pointer))
 
@@ -28,9 +23,9 @@
  (modules test_combine))
 
 (test
- (name test_tabulate_and_friends)
+ (name test_tabulate_and_variants)
  (libraries parallel_seq sequence_provider)
- (modules test_tabulate_and_friends))
+ (modules test_tabulate_and_variants))
 
 (test
  (name test_mat_mul)
